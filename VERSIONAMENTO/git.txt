@@ -89,4 +89,88 @@ Sincronizando dados com repositorio
 -Às vezes desejamos visualizar mais informações do que o git log nos fornece, como por exemplo as linhas modificadas em cada commit. Para isso, basta passar uma opção ao comando git whatchanged para que o Git nos forneça tal informação. Qual é essa opção?
 	R: -p ex: git whatchanged -p
 	
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Organização do trabalho com branches
+
+- As branches possibilitam desenvolver separadamente cada uma das funcionalidades sem interferir no desenvolvimento de uma outra parte do projeto.
+
+- para criar uma branch nova basta usar o comando
+	.git branch design -- no caso design é o nome da branch
+
+- para saber quais branchs tem no projeto
+	.git branch
+	
+- para trocarmos a branch atual basta fazer assim
+	.git checkout design -- no caso design é o nome da branch
+
+- para subirmos essa nova branch temos que dar um push
+	.git push origin design
+	
+- Porém, toda vez que atualizarmos tanto o nosso projeto local quanto o projeto remoto, precisaremos indicar qual o repositório e o nome da branch 
+	."git pull origin design" e "git push origin design" para atualizar os repositórios locais e remotos
+	.para evitar esta trabalheira aqui podemos fazer o seguinte
+		-podemos indicar o caminho (track) da branch remota para a nossa branch local. Isso pode ser feito no instante em que criamos a branch remota através da opção "-u". No nosso caso, temos:
+			."git push -u origin design" Com isso, a nossa branch local sabe qual a branch remota que ela se referencia
+		
+- E como podemos visualizar as branches já existentes em um repositório remoto? Isso é feito através da opção "-r" passado ao comando git branch.
+	.git branch -r
+	
+- para copiar uma branch remota para maquina local, basta fazer assim
+	.git branch -t design origin/design --> origin/design é o nome da branch
+	
+- Ao digitar o comando git checkout -b design, criamos a branch design e mudamos para a branch design.
+
+- Ao digitarmos o comando git branch -d design, a branch design será deletada.
+
+verificar se tudo que eu faço em outras branchs são replicadas para a master*******************
+
+- Ao digitar o comando git branch -a, nos é fornecido com todas as listas de branches tanto remotas quanto locais.
+
+- Ao digitarmos o comando "git push origin :design" a branch remota design do repositório referente ao origin é deletada.
+
+- Realizando o comando git fetch origin, podemos verificar todas as atualizações que foram realizadas no repositório referente ao origin.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Como o Git trata as várias alterações no mesmo arquivo?
+
+
+- caso duas pessoas estejam mechendo no mesmo arquivo, quando eu foi dar um push e o mesmo não estiver de acordo com o que esta no repositorio ira dar um erro e não aceitara seu push, logo temos que dar um pull para atualizar nossos arquivos, depois disso basta abrir o arquivo e ver as marcações que o proprio git colocou la, mostrando as diferenças no arquivo
+ai é so arrumar e dar um push comitar e dar um push denovo
+
+- mas a casos que o proprio git ja faz o merge , o processo manual esplicado acima é so para casos que gera conflito(ou seja alterações na mesma linha)
+
+dar uma pesquisada no git mergetool***************************************
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Boas praticas GIT
+
+- O comando "git rebase master" --> master é a branch que eu desejo ficar igual, os commits feitos em "desenvolvimento"(a minha branch atual)são movidos para uma branch temporária e o git atualiza a nova base de commits(pega tudo que esta no master). Após essa atualização, o próprio Git traz de volta os commits que realizamos e os aplica sobre a nova base, um de cada vez.
+
+
+- O comando "git merge" --> Para utilizá-lo, primeiro é preciso ir para a branch para a qual se quer levar os commits, no caso, a "master" (git checkout master). Em seguida, deve-se dizer para o comando git merge de qual branch virão os commits novos, que, no caso, é a branch "desenvolvimento". Para isso, basta executar git merge desenvolvimento
+
+- uma boa pratica é sempre fazer comit a cada alteração, pois quando for fazer um rebase para uma branch os conflitos que teram que ser resolvidos são menores
+
+- cada desenvolvedor trabalhar em sua branch separada
+
+- vantagem de usar rebase ao inves de merge
+	.No rebase você terá a chance de fazer a junção passo a passo ao invés de fazer uma mega junção de código.
+
+- No meio de um rebase em que houve conflito e teremos que tratar manualmente, fazemos esse tratamento na branch "(no branch)", que é apenas temporária, criada pelo Git para que possamos dar a resolução do conflito.
+
+- O que o comando git rebase faz?
+  R: O objetivo com comando git rebase é fazer com que a branch em que se está, tenha um novo HEAD que está em outra branch. Ou seja, a base da branch, a partir da qual você vai realizar seus commits, deverá ser modificada. Para isso, caso haja commits novos na branch que terá a base trocada, o Git coloca seus commits em um local temporário, e em seguida começa a aplicar a nova base. Após a atualização do HEAD, o Git começa a aplicar seus commits sobre a nova base.
+  
+- No processo de rebase, quando há um conflito, temos 3 opções para seguir. Quais são elas?
+	R:continue, abort e skip ; ex de uso: git rebase --continue
+	continue: deve ser utilizado após a resolução manual dos conflitos.
+	skip: faz com que suas alterações sejam descartadas 
+	abort: volta atrás em todo o processo de rebase.
+- 
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
+
+-Caso eu queira alterar um arquivo para o seu estado igual do repositorio eu faco um git checkout nomedoarquivo
+	. o git checkout se eu passar o nome de uma branch ele muda para aquela branch agora se eu passar o nome de um arquivo ele volta as alterações que foram feitas no mesmo
 
