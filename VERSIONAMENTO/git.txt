@@ -55,3 +55,38 @@ Podemos combinar a opção de mensagem com git commit -am 'Mensagem de commit'
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Sincronizando dados com repositorio
+
+-primeiro criamos um repositorio no github
+-para adicionar o repositorio remoto basta usar o comando git remote add [alias_do_repositorio] [uri_do_repositorio]
+	[alias_do_repositorio] --> pode ser qualquer nome que sirva de apelido para o projeto(por padrão é usado "origin")
+	[uri_do_repositorio] -- > uri que o proprio git fornece ao criar o repositorio la
+		ex: git remote add origin https://github.com/furmiga/anotacoes-de-estudos.git
+	
+-agora podemos dar um push nos nossos comits(levando em consideração que o seu repositorio ja esta configurado com o "git init" e com tudo devidamente comitado)
+	git push origin master
+		.master é o brach do projeto(master é o padrão)
+
+-podemos clonar repositorios tambem
+	-git clone [uri_do_repositorio] --> assim o nome do repositorio que estiver no git sera o mesmo da sua maquina
+	-caso eu queira dar um proprio nome para a pasta criada na minha maquina, basta eu fazer assim:
+		Caso queira, é possível que o nome da pasta em seu computador seja diferente. Basta especificar o nome desejado no fim do comando:
+			.git clone git://github.com/[usuario_do_dono_do_repositorio]/curso-git.git meuprojeto (colocando ao final o nome do projeto)
+			
+-caso eu altere coisas no repositorio os outros desenvolvedores terão que atualizar os seus arquivos, para isso usamos o pull
+	-git pull origin master
+		.agora os arquivos serão atualizados e todos ficaram com a mesma versão do projeto
+	
+-podemos visualizar o log de alterações direto no github, mas podemos fazer isso via terminal tambem com o comando log	
+		-git log
+	
+-podemos ver tambem quais arquivos foram modificados com o comando 	whatchanged
+	-git whatchanged
+
+-no git podemos dar permissão para outros colaboradores(outros desenvolvedores) a comitar no nosso projeto
+	.basta ir em setting do nosso repositorio e depois collaborators, e adicionar os colaboradores, pode tambem acessar via url https://github.com/[seu_usuario_no_github]/curso-git/admin/collaboration
+
+	
+-Às vezes desejamos visualizar mais informações do que o git log nos fornece, como por exemplo as linhas modificadas em cada commit. Para isso, basta passar uma opção ao comando git whatchanged para que o Git nos forneça tal informação. Qual é essa opção?
+	R: -p ex: git whatchanged -p
+	
+
