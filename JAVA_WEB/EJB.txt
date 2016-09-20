@@ -1,0 +1,474 @@
+O primeiro session Beans que vamos ver é o stateless
+
+"Durante o desenvolvimento de uma aplicação surgem várias preocupações, como por exemplo: de que forma guardaremos as informações no banco de dados, como garantiremos a segurança na aplicação, como vamos conectar com o banco de dados, como acessaremos os seus serviços, etc. Em geral, todas essas preocupações listadas são agnósticas às regras de negócio."
+De que forma na plataforma Java podemos nos livrar dessas preocupações?
+	
+	R:Adotando um Servidor de Aplicações que implemente as especificações da arquitetura Java Enterprise Edition (JEE). A tarefa de um servidor de aplicações é justamente livrar o desenvolvedor dessas preocupações e fornecer uma infra-estrutura pronta para que o desenvolvedor possa aproveitar. Ou seja, não é a aplicação que vai gerenciar a transação, a conexão com o banco de dados ou se preocupar com o agendamento de tarefas. Vamos inverter o controle e deixar o servidor de aplicação fazer toda essa parte.
+	
+Utilizando a arquitetura EJB, o que normalmente implementamos nos Session Beans?
+	
+	R:Utilizando a arquitetura EJB, as regras de negócio são implementadas em componentes específicos que são chamados de Session Beans. O EJB Container administra esses componentes oferecendo diversos recursos a eles.
+	
+De qual componente são as características listadas abaixo?
+	Não mantém estado de conversação com o cliente;
+	Não tem compromisso de manter uma sessão;
+	São intercambiáveis e podem ser alocados de um pool;
+	É um EJB econômico;
+	
+	R:Do Stateless Session Bean e´ o primeiro tipo de Session Bean. Os Stateless Session Bean não mantém estado de conversação com o cliente, não têm compromisso de manter uma sessão, são intercambiáveis e podem ser alocados de um pool e são EJBs econômicos;
+	
+Na especificação do EJB 3.1, como podemos definir que uma classe será um EJB Stateless Session Bean com acesso local e deverá ser registrado no JNDI?
+	
+	R: Basta utilizar a anotação @Stateless
+	
+Dado o seguinte cenário:
+	@Stateless
+	public class LivroDao {
+		// implementação omitida
+	}
+	@Stateless
+	public class AutorDao {
+		// implementação omitida
+	}
+O que está errado na implementação da classe abaixo na arquitetura Java EE:
+
+	public class LivroBean {
+		 private AutorDao autorDao = new AutorDao(); // criação do DAO (1)
+		 private LivroDao livroDao = new LivroDao(); // criação do DAO (2)
+		 // outros métodos e atributos omitidos
+	}
+	
+	R:Ao usar EJB, não podemos mais instanciar o AutorDaoe o LivroDao na mão. Estamos assumindo o controle ao criar o DAO naquelas linhas (1) e (2). Nesse caso não estamos usando o AutorDao e o LivroDao como EJBs.
+	  O DAO está sendo administrado pelo EJB Container. Portanto, quem cria o DAO é o EJB Container e não a minha classe. Consequentemente precisamos pedir ao EJB Container para passar aquela instância que ele está administrando. Felizmente, isso é fácil de fazer, basta usar a anotação @Inject:
+	  
+	  @Inject
+	  private AutorDao autorDao; // sem new (1)
+
+      @Inject
+      private LivroDao livroDao; // sem new (2)
+
+------------------------------------------------------------------------------------------------------------------------
+
+Ciclo de vida de um sessionBean
+
+Session bean  @Singleton(apenas uma instancia do mesmo em toda a aplicação)
+
+Usando os recursos disponíveis no servidor de aplicações para os EJBs, qual a maneira mais fácil de garantir a execução de um método do Session Bean logo após sua criação e inicialização pelo EJB Container?
+	R:Assim que o EJB Container cria e inicializa o Session Bean, o método anotado com @PostConstruct é executado. Esse tipo de comportamento está ligado ao ciclo de vida do Session Bean e também é chamado de Callbacks.
+	
+Um dos serviços que ganhamos ao usar EJBs é o Thread Safety. O que isso significa?
+	R:Significa que um EJB Session Bean não é compartilhado entre Threads. Ou seja, quando um Session Bean estiver em uso, o EJB Container decide criar mais um Session Bean para atender uma nova chamada. Uma estratégia usada pelos servidores de aplicação para isso é o Pooling for Stateless Session EJBs.
+	
+"O EJB Container automaticamente fornece um pool de objetos que gerencia a quantidade dos Session Beans. A configuração desse pool se encontra no arquivo de configuração do JBoss AS, ou seja, é totalmente específico."
+No caso do JBoss AS, qual atributo devemos modificar no bloco <pools> do arquivo .xml de configuração do servidor?
+
+	R:O atributo é max-pool-size, que por default está configurado para 20 objetos Stateless Session Bean (SLSB) no pool.
+	
+Qual a principal característica do Singleton Session Bean?
+	R: Garantia de haver somente uma instância do Session Bean em uso
+
+
+Qual a melhor maneira de forçar o EJB Container a instanciar um Singleton Session Bean logo na inicialização da aplicação?
+	R:Por padrão um EJB é carregado sob demanda (lazy), mas através da anotação @Startup podemos definir que queremos usar o Singleton Bean desde o início da aplicação. Inicialização com @Startup também é chamada eager initialization.
+		@Singleton
+		@Startup
+		public class teste{}
+		
+
+Os session bean são thread safe, quando estamos usando um session bean , e chega uma outra requisição que precise deste session bean, o container ejb, ira instanciar um novo sessio bean para atender esta demanda.
+	.podemos configurar este pool de session beans do ejb(no wildfly podemos configurar isso direto no arquivo de configuração do mesmo(standalone.xml))
+		-<strict-max-pool name="slsb-strict-max-pool" max-pool-size="20" instance-acquisition-timeout="5" instance-acquisition-timeout-unit="MINUTES"/>
+			.Aqui vemos que todo session bean tem um pool de ate 20 instancias(caso este pool acabe, quem for usar um session bean , tera que esperar alguma instancia ficar disponivel)
+			
+
+			
+Qual a vantagem de carregar um Session Beans do tipo Singleton desde a inicialização do servidor? Como essa inicialização se chama?
+	R:Eles são úteis principalmente para inicializar alguma configuração ou agendar algum serviço, coisas que só fazem sentido no início da aplicação, ou seja, quando o JBoss AS carrega a aplicação já queremos que o Session Bean seja criado para carregar todas as configurações.
+Essa inicialização também é chamada de Eager Initialization.
+
+Há mais um tipo de EJB Session Bean. Além dos Session Beans Stateless e Singleton, existe um Session Bean do tipo Stateful. Basta anotar a classe com @Stateful, por exemplo:
+
+
+Qual é a diferença entre Stateful e Stateless então?
+
+Vimos que Session Beans Stateless são objetos que fazem parte de um pool. Esse pool não existe para Session Bean Stateful. Um SBSF funciona parecido com o objeto HttpSession do mundo de Servlets. É um objeto exclusivo de um cliente, apenas um cliente usará este objeto.
+
+Para fixar o conhecimento: O que descreve um Session Bean Stateful (SBSF) melhor?
+	R:Stateful é administrado pelo EJB Container, faz parte dos serviços e é um objeto exclusivo do cliente .
+	
+Conceitualmente, o funcionamento de um Session Bean Stateful é parecido com:
+	R:HttpSession. A diferença entre Session Bean Stateful e HttpSession é que o primeiro é o administrado pelo EJB Container e o segundo pelo Servlet Container.
+	
+Qual é a diferença entre Session Bean Stateless e Session Bean Stateful?
+	R:Stateless usa um pool e pode ser reaproveitado entre clientes enquanto um Stateful é exclusivo do cliente.
+	
+------------------------------------------------------------------------------------
+INTEGRAÇÃO JPA
+
+	Uma das grandes sacadas do Java EE é a possibilidade de integrar os benefícios de várias especificações para facilitar a vida do desenvolvedor. No caso de integrarmos a JPA com os EJBs, qual anotação que devemos utilizar para fazer a "injeção" de um EntityManager no Session Bean?
+		R:Como o EJB Container administrará o JPA, é preciso usar uma anotação especifica do mundo EJB para fazer a "injeção" do EntityManager, nesse caso, precisamos utilizar @PersistenceContext.
+		
+	
+
+"Quem é responsável em fornecer a conexão ao banco de dados é o EJB Container! É um serviço que o servidor deverá disponibilizar para as aplicações."
+Para que isso seja possível, devemos configurar um datasource no servidor, que posteriormente criará um pool de conexões e o disponibilizará ao JPA pelo arquivo persistence.xml.
+
+Dada a configuração abaixo, como ficaria o trecho de configuração no persistence.xml para utilizar esse datasource?
+	<datasource jndi-name="java:/livrariaDS" pool-name="livrariaDS"
+		enabled="true" use-java-context="true">
+
+		<connection-url>jdbc:mysql://localhost:3306/livraria</connection-url>
+		<driver>com.mysql</driver>
+		<pool>
+			<min-pool-size>10</min-pool-size>
+			<max-pool-size>100</max-pool-size>
+			<prefill>true</prefill>
+		</pool>
+		<security>
+			<user-name>root</user-name>
+			<password></password>
+		</security>
+	</datasource>
+	
+	R:<jta-data-source>java:/livrariaDS</jta-data-source>
+	
+	
+DataSource, nome simplificado que damos a interface do pool de conexões disponibilizado pelo JEE à aplicação
+
+
+Vamos integrar o JPA com os EJBs? Primeiro arrumaremos a casa!
+	Precisamos criar um datasource
+		.Primeiro precisamos preparar nosso servidor para trabalhar com o banco de dados MySQL
+			- Procure a pasta onde o JBoss AS foi instalado (descompactado) e crie, dentro da subpasta modules > com, uma pasta chamada mysql
+				--modules/com/mysql/main/(e aqui colar o driver do mysql e o module.xml que nos baixamos)
+		.no arquivo standalone.xml
+			-  <drivers>
+				<!-- Demais drivers declarados aqui -->
+
+				<driver name="com.mysql" module="com.mysql">
+					<xa-datasource-class>
+						com.mysql.jdbc.jdbc2.optional.MysqlXADataSource
+					</xa-datasource-class>
+				</driver>
+			</drivers>
+			
+			e configurando o DATASOURCE
+			
+			<datasource jndi-name="java:/livrariaDS" pool-name="livrariaDS"
+				enabled="true" use-java-context="true">
+
+					<connection-url>jdbc:mysql://localhost:3306/livraria</connection-url>
+					<driver>com.mysql</driver>
+					<pool>
+						<min-pool-size>10</min-pool-size>
+						<max-pool-size>100</max-pool-size>
+						<prefill>true</prefill>
+					</pool>
+					<security>
+						<user-name>root</user-name>
+						<password></password>
+					</security>
+				</datasource>
+				<drivers>
+					<!-- Drivers declarados aqui -->
+				</drivers>
+			</datasources>
+			
+	
+CDI X EJB
+	As especificações CDI e EJB são bem parecidas no sentido que ambos fazem Inversão de controle e Injeção de dependências. A diferença é que o CDI não sabe, por padrão pelo menos, gerenciar o JPA e a transação e não oferece vários outros serviços do mundo EJB (como remotabilidade ou timer service).
+	EJB e CDI são de certa forma concorrentes dentro do JavaEE, sendo EJB um pouco mais completo e o CDI um pouco mais flexível/simples.
+	
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+JTA
+
+"O Java Transaction API é a forma padrão de gerenciar transações com bases de dados dentro do servidor Java EE e já funciona sem nenhuma configuração adicional."
+Como chamamos esse padrão?
+
+	R:Este padrão se chama Container Managed Transaction (CMT)
+	
+Mesmo sabendo que não precisamos fazer nenhuma configuração adicional para gerenciar transações dentro do servidor Java EE, como faríamos para deixar essa configuração explícita?
+
+	R:Bastaria utilizar a anotação @TransactionManagement(...) que define o tipo de gerenciamento da transação, no nosso caso TransactionManagementType.CONTAINER.
+	
+Qual a principal diferença entre os atributos de transação REQUIRED e REQUIRES_NEW?
+	
+	R:Utilizando tanto o atributo REQUIRED quanto REQUIRES_NEW, o JTA garante uma transação rodando quando o método é chamado. Porém, a principal diferença está no fato de que, utilizando o atributo REQUIRED, caso já tenha uma transação rodando, ela será utilizada. Já no caso do atributo REQUIRES_NEW, caso já exista uma transação rodando, a transação atual será suspensa para abrir uma nova.
+	https://s3.amazonaws.com/caelum-online-public/ejb/ejb-cap4-tx-required.png
+	
+	
+O que aconteceria se um método do Session Bean, anotado com @TransactionAttribute(TransactionAttributeType.MANDATORY), fosse acionado sem uma transação ativa?
+	
+	R:Nesse caso, o container verifica se já existe uma transação rodando, caso contrário, joga uma exceção de sistema e não executa o método, forçando um rollback. Ou seja, quem faz a chamada deve abrir uma transação.
+	
+Qual a principal diferença entre os TransactionAttributeType SUPPORTS e NOT_SUPPORTED?
+	
+	R:Com o atributo configurado para SUPPORTS, o co´digo será executado com ou sem transac¸a~o. Já com NOT_SUPPORTED o código deverá ser executado sem transac¸a~o, caso alguma transação esteja aberta, ela será suspensa temporariamente ate´ a execução do me´todo acabar.
+	
+	
+	
+O Gerenciamento da transação com JTA
+O JTA, então, é a forma padrão de gerenciar a transação dentro do servidor JavaEE e já funciona sem nenhuma configuração. Este padrão se chama CONTAINER MANAGED TRANSACTION (CMT).
+
+
+
+BOAS PRATICAS
+
+Normalmente, os DAOs não são o lugar ideal para abrir uma nova transação. Ao usar um DAO é preciso ter uma transação rodando. Quem faz a chamada precisa se preocupar com isso e abrir uma transação para o DAO funcionar.
+
+Serviços como Transaction boundary
+
+Repare que na nossa aplicação são os BEANs que usam os DAOs, por exemplo o AutorBean. O problema aqui é que os BEANs não são EJBs (não são Session Beans) e por isso não têm acesso ao JTA.
+https://s3.amazonaws.com/caelum-online-public/ejb/ejb-cap4-tx-sem-jta.png
+
+Para resolver isso vamos criar uma classe intermediária, uma classe AutorService que fica entre os Beans e os DAOs. A classe AutorService também será um Session Bean e responsável por abrir uma nova transação. É ela quem recebe um AutorDao injetado e delega a chamada:
+https://s3.amazonaws.com/caelum-online-public/ejb/ejb-cap4-mandatory.png
+
+
+É muito comum ter essa divisão de responsabilidade entre bean, serviço e DAO em um projeto real. O bean possui muito código relacionado ao JSF (view), o serviço é o controlador na regra de negócio e o DAO possui o código de infra-estrutura.
+https://s3.amazonaws.com/caelum-online-public/ejb/ejb-cap4-layered.png
+
+
+Gerenciamento da transação programaticamente
+
+PODEMOS TAMBEM GERENCIAR UMA TRANSAÇÃO DE FORMA PROGRAMATICA, ASSIM COMO FAZEMOS QUANDO USADO JPA DIRETO, EX: DAR BEGIN E COMMIT EM UMA TRANSACAO
+
+PARA ISSO PRECISAMOS TER UM USERTRACTIONID
+	@Inject UserTransaction tx;
+	
+	-->E USAR ASSIM:
+	public void salva(Autor autor) {
+
+		//...
+		try {
+			tx.begin();
+			manager.persist(autor);
+			tx.commit();
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		//...
+	}
+	
+	
+OBS:
+	Quando usamos o atributo @TransactionAttribute(TransactionAttributeType.REQUIRED) no service, dissemos ao container que a operação deve obrigatoriamente ser executada dentro de uma transação. Mas quando colocamos o atributo @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW) no método salva() do DAO, o método ao ser chamado, suspende automaticamente a transação corrente que veio do service e abre uma nova; que, por sua vez, será usada para salvar o autor no banco e em seguida será encerrada automaticamente pelo método, sem qualquer tipo de erro ou exception que force um rollback.
+
+	Quando a transação que havia sido suspensa pelo DAO é reativada, nossa exception é lançada e a transação é forçada a fazer um rollback. Mas esse rollback não interferiu no cadastro do autor no banco porque pela escolha dos atributos de transação, as transações eram diferentes e independentes entre si.
+	
+	
+------------------------------------------------------------------------------------------------------------
+LIDANDO COM EXCEÇÕES
+
+O que acontece quando uma EJBTransactionRollbackException é lançada?
+	R:Ao recebermos uma EJBTransactionRollbackException ocorre uma System Exception. É realizado rollback da transação e o Session Bean é invalidado.
+	
+Uma System Exception sempre causa rollback, invalida o Session Bean e tira ele do Pool de objetos.
+
+Por padrão, qualquer exceção do tipo checked é considerada uma Application Exception, não causa rollback, nem invalida o Session Bean.
+
+Através da anotação @ApplicationException podemos reconfigurar o padrão para Application Exceptions. Veja o exemplo:
+	@ApplicationException(rollback=true)
+	public class ValidationException extends Exception {
+	}
+	
+	-->AQUI estou criando uma exceção que é applicationexception e definindo que ela ira gerar um roolback
+	
+	
+Qual é a diferença entre System Exception (SE) e Application Exception (AE)?
+	R:Uma System Exception é algo grave, imprevisto, não deveria acontecer e sempre causa um rollback da transação. Normalmente são exceções de infra-estrutura. Além disso, aquele Session Bean que lançou a exceção é invalidado e retirado do pool de objetos. Por padrão, qualquer exceção unchecked é System Exception.
+	  Uma Application Exception pode acontecer durante a vida da aplicação e relacionada ao domínio. Por isso não causa rollback e nem invalida o Session Bean. Por padrão, qualquer exceção checked é Application Exception.
+	  https://s3.amazonaws.com/caelum-online-public/ejb/ejb-cap5-exception.png
+	
+-----------------------------------------------------------------------------------------------------------------
+INTERCEPTADORES
+
+Por que usar um interceptador?
+	R:Um interceptador é útil para relacionar uma funcionalidades com vários Session Beans. No lugar de repetir a funcionalidade em cada Session Bean, podemos centralizar o código em um lugar apenas e configurar aonde aplicar. É algo muito poderoso e ajuda dividir melhor a responsabilidade do código.
+
+Qual anotação usamos para configurar o método que executa o código de um interceptador?
+	R:public class LogInterceptador {
+
+		  @AroundInvoke
+		  public Object loga(InvocationContext ctx) {
+			  //implementação omitida
+		  }
+		}
+		
+Qual anotação usamos para associar um interceptador com a classe interceptada?
+	R:Uma forma de associar um interceptador com uma classe é usar a anotação @Interceptors. Para, por exemplo, associar um interceptador PermissãoInterceptador com a classe AutorService podemos escrever:
+		@Stateless
+		@Interceptors({PermissaoInterceptador.class})
+		public classe AutorService {}
+		->A anotação @Interceptors recebe um array de classes. Assim podemos usar mais do que um interceptador, por exemplo:
+
+		@Stateless
+		@Interceptors({LogInterceptador.class, PermissaoInterceptador.class})
+		public classe AutorService {
+			//...
+		}
+		->A ordem dos interceptadores importa, nesse exemplo é executado primeiro o LogInterceptador e depois o PermissaoInterceptador.
+
+
+	EXEMPLO DO USO DE INTERCEPTADOR
+	
+	public class LogInterceptador {
+		//precisa anotar o metodo, para identificar que é um interceptador
+		@AroundInvoke
+		public Object intercepta(InvocationContext context) throws Exception {
+			long ini = System.currentTimeMillis();
+			//Executaa rotina que tem que ser executada
+			Object o = context.proceed();
+			String classe = context.getTarget().getClass().getSimpleName();
+			String metodo = context.getMethod().getName();
+			System.out.println(classe + " - " + metodo);
+			System.out.println("Tempo: " + (System.currentTimeMillis() - ini));
+			return o;
+		}
+	}
+	
+	E PRECISO ANOTAR AS CLASSES QUE EU QUERO QUE SEJAM INTERCEPTADAS
+	
+	@Stateless
+	@TransactionManagement(TransactionManagementType.CONTAINER)//Opcional
+	@Interceptors(LogInterceptador.class)
+	public class AutorDao {}
+	
+	caso eu nao queira anotar direto na classe eu posso criar um arquivo xml de configuração e neste arquivo fazer o vinculo do interceptador com o bean
+	arquivo -> ejb-jar.xml
+	
+	<interceptors>
+	 	<interceptor>
+	 		<interceptor-class>
+				br.com.caelum.livraria.interceptador.LogInterceptador
+			</interceptor-class>
+	 	</interceptor>
+	 </interceptors>
+	 
+	 <assembly-descriptor>
+		<interceptor-binding>
+			<ejb-name>AutorDao</ejb-name>
+			<interceptor-class>
+				br.com.caelum.livraria.interceptador.LogInterceptador
+			</interceptor-class>
+		</interceptor-binding>
+		<interceptor-binding>
+            <ejb-name>AutorService</ejb-name>
+            <interceptor-class>
+                br.com.caelum.livraria.interceptador.LogInterceptador
+            </interceptor-class>
+        </interceptor-binding>
+	</assembly-descriptor>
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Web Services
+
+Por que usar Web Services?
+	R: Para integrar aplicações acessando outros sistemas usando o protocolo HTTP.
+
+Qual é a anotação que usamos para acessar um EJB Session Bean como Web Service (HTTP e SOAP/WSDL) ?
+	R:	@WebService
+		@Stateless
+		public class AutorService {
+
+		  public List<Autor> getAutores() {
+			  //implementação omitida
+		  }
+		}
+		
+O que é o arquivo WSDL?
+	R:O WSDL é um XML que descreve detalhadamente o serviço publicado. Nele encontramos o endereço, todas as mensagens e tipos disponíveis. É um arquivo que é processado por uma ferramenta como SoapUI que entende esses detalhes e gera a mensagem SOAP.
+	
+
+Dado o endereço do Web Service:
+http://localhost:8080/livraria/AutorWS
+
+Por padrão, qual é o endereço do WSDL?
+	R:http://localhost:8080/livraria/AutorWS?wsdl
+
+
+Dada a implementação abaixo:
+	//imports omitidos
+
+	@WebService
+	@Stateless
+	public class AutorService {
+
+	  public Autor getAutor(Long id) {
+
+		  //implementação omitida
+		  return autor;
+	  }
+	}
+Como podemos deixar o WSDL e consequentemente a mensagem SOAP mais expressiva, evitando elementos no XML como <arg0> e <return>?
+	R:	@WebService
+		@Stateless
+		public class AutorService {
+
+		  @WebResult(name="autorEncontrado")
+		  public Autor getAutor(@WebParam(name="idAutor") Long id) {
+
+			  //implementação omitida
+			  return autor;
+		  }
+		}
+		
+		
+		
+Qual método HTTP um Web Service SOAP/WSDL usa por padrão?
+	R:Por padrão um Web Service SOAP/WSDL usa o método POST do protocolo HTTP.
+	
+------------------------------------------------------------------------------------------------------------------------------
+AGENDAMENTO E EAR
+
+Como se chama a anotação para configurar um agendamento com EJB?
+	R:Para o agendamento usamos a anotação @Schedule, por exemplo:
+		@Singleton
+		@Startup
+		public class Agendador {
+
+		  @Schedule(hour="9,18")
+		  public void agendado() {
+			 //implementação omitida
+		  }
+
+		}
+		
+O que podemos dizer sobre o código abaixo?
+	@Singleton
+	@Startup
+	public class Agendador {
+
+	  @Schedule(hour="*", minute="30")
+	  public void geraRelatorio() {
+		 //gerando relatorio
+	  }
+
+	}	
+
+	R:O método geraRelatorio() é executado toda hora as 30 minutos.
+	MAIS CONFIGURAÇÕES AQUI -> http://docs.oracle.com/javaee/6/api/javax/ejb/Schedule.html
+	
+Por que usamos um Session Bean do tipo Singleton para o agendamento?
+	R:Para carregar o agendamento apenas uma vez, sem pool de objetos.
+	
+Para que serve um EAR (Enterprise ARchive)?
+	R:Um EAR, Enterprise ARchive, é nada mais do que um arquivo container que agrupa várias aplicações ou módulos. Assim temos uma unidade de deploy ao invés de publicar cada módulo isoladamente.
+	
+
+	
+podemos acessar ejb remotamente tambem(dar uma olhada no projeto EJB que eu fiz)
+	
+	Concluímos que com o uso de EJB remotos é permitido que haja a integração entre aplicações Java. No nosso caso, temos um cliente Java que busca por um EJB em um catálogo JNDI remoto e executa métodos desse EJB remotamente.
+Mas qual tecnologia foi utilizado para acessar o EJB remotamente? Nesse caso usamos o RMI (Remote Method Invocation) que é um padrão Java para conectar duas JVM remotamente e chamar algum método. O EJB abstrai todos os detalhes desse padrão!
+
+	No caso de precisarmos de integrações com outras plataformas como .NET ou PHP, uma opção é tornar o EJB acessível via SOAP como já visto. SOAP é independente da plataforma pois usa HTTP e XML. O RMI é algo mais especifico, focado no JAVA apenas.
+	
+	
+	
+	
+LEMBRETE -->
+.AMANHA FAZER MAIS TESTES COM TRANSAÇÕES, VER SE DA PARA LOGAR AS TRANSAÇÕES, QUERO FAZER UM TESTE CHAMANDO DOIS METODOS NO DAO PELO SERVICE, E VER COMO LEE GERENCIA AS TRANSAÇÕES
+.VER SE CONSIGO VER SE ELE ABRE UM NOVA TRANSAÇÃO QUANDO ESTA ANOTADO COM @TransactionAttribute(TransactionAttributeType.REQUIRED) E SE ELE USA A DO SERVICE QUANDO ESTA ANOTADDA COM @TransactionAttribute(TransactionAttributeType.MANDATORY)
+
+

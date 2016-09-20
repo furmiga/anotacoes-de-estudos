@@ -1,0 +1,153 @@
+DeadLock
+
+------------------------------------------------------------
+
+Quando da um erro na thread ela ira parar a thread corrente(para a pilha que ela esta sendo executada), ela vai subir na pilha que ela esta sendo executada ate achar alguem para tratar a execeção ou chegar no topo da pilha ea thread parar
+Geralemnte é o metodo run
+
+Mas é possivel criar um hadler para receber as exceções de outras threads
+
+		Thread.UncaughtExceptionHandler handlerException = new Thread.UncaughtExceptionHandler() {
+
+			@Override
+			public void uncaughtException(Thread t, Throwable e) {
+				System.out.println("Erro na Thread " + t.getId() + " mensagem: " + e.getMessage());
+			}
+		};
+		Thread t1 = new Thread(new LeitorPropriedades(p1, "arquivo1.txt"));
+		t1.setUncaughtExceptionHandler(handlerException);
+		
+		t1.start();
+
+->Agora quando lançar uma exceção não tratada ele vai rodar o metodo da classe handler
+
+----------------------------------------------------------------------------
+
+Modificador volatile
+
+As vezes quando vc muda uma variavel atraves de uma thread , vc atualiza um cache da thread(que posteriormente seria atualizado na memoria principal), e caso tenha duas
+thread atualizando a mesma variavel , pode ocorrer de uma thread atualizar o valor que esta no cache porem este valor esta desatualizado(com o valor que esta no cache da outra thread ou que ja esta nba memoria principal)
+Para Variaveis declaradas como volatile,o acesso é feito direto na memoria principal
+
+o modificador volatile pode ser utilizado para que a escrita e leitura de variaveis long e double sejam operações atomicas
+	
+Variáveis cujas operações numéricas não podem ser consideradas atômicas são long e double
+
+Variáveis estáticas podem ser mantidas em caches locais das Threads
+
+------------------------------------------------------------
+
+Criando um pool de threads(caso tenha 100 processos em paralelo este executor ira reaproveitar threads que ja foram finalizadas para alocar um novo processo , sendo assim ela faz reaproveitamento e cria menos threads pois quando um processo acaba ela ja aloca outro na thread)
+
+ExecutorService es = Executors.newCachedThreadPool();
+
+Executando runnable
+
+es.execute(runnable);
+
+encerrando as threads
+
+es.shutdown();
+
+-----------------------------------------------------------------------------
+O que é uma operação atômica?
+	Cuja execução não pode ser interrompida na metade
+
+---------------------------------------------------------------------
+
+ Deadlock-->Quando voce tem blocos sincronizados e um espera liberar o recurso que o outro esta usando e o outro espera liberar recursos do primeiro.
+
+.Recursos não podem ser compartilhados
+.Um processo segura um recurso
+
+------------------------------------------------------------------------------
+
+Para pegar valores retornados da thread tenho que executar a rotina atraves de uma interface chamada calleble e não da runnable
+
+//Implementando a interface callable
+static class Fatorial implements Callable<Integer> {
+
+		public Integer call() throws Exception {
+			return 20
+		}
+
+	}
+
+ExecutorService es = Executors.newCachedThreadPool();
+
+//Ao chamar o submit ele vai executar o callable e retornar uma interface future(para que possamos obter o //valor)
+Fatorial f = new Fatorial();
+Future<Integer> valor = es.submit(f);
+
+//Pego o valor gerado
+int valorTotal=future.get();;	
+
+---------------------------------------------
+
+BlockingQueue
+
+A blockingQueue é uma lista no qual vc adiciona valores nela e quando ela chega na sua capacidade ela fica esperando ate alguem consumi algum dado que ela tenha e tenha mais espaço na fila, e quem vai pegar valores nesta fila caso não tenha nenhum fica aguardando que alguma thread input valores nela
+
+Bloqueia a execução se tentar colocar elemento e estiver cheia; e bloqueia a execução se tentar retirar um elemento e estiver vazia
+
+Considere que três threads estão bloqueadas por terem chamado o método take() da classe BlockingQueue. Marque a alternativa verdadeira:
+	R:Ao ser inserido um elemento, uma dessas threads irá ser desbloqueada e irá receber esse elemento
+
+Exemplo de uso:
+
+	
+	//***Inicializa a queue
+	private static BlockingQueue<Integer> fila = new ArrayBlockingQueue<Integer>(4);
+
+	public static void main(String[] args) throws InterruptedException, ExecutionException {
+		ExecutorService es = Executors.newCachedThreadPool();
+		
+		for (int i = 1; i <= 10; i++) {
+			Fatorial f = new Fatorial(i);
+			es.execute(f);
+		}
+		
+		
+		while(true){
+			//***Pega os valores da queue, caso não tenha nenhum o programa ira ficar parado nesta linha até alguma outra thread inputa valor nela
+			System.out.println(fila.take());
+		}
+	
+	}
+
+	static class Fatorial implements Runnable {
+		private int valor;
+
+		public Fatorial(int valor) {
+			super();
+			this.valor = valor;
+		}
+
+		public void run(){
+			int resultado = valor;
+			for (int i = (valor - 1); i > 0; i--) {
+				resultado *= i;
+			}
+			try {
+				//***Inputa valor na queue
+				fila.put(resultado);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+
+	}	
+
+----------------------------------------------------------------------------
+Cria um ThreadLocal
+
+O que é uma variável do tipo ThreadLocal?
+R:Uma variável que guarda um valor distinto para cada Thread
+
+ThreadLocal<String> t1 = new ThreadLocal<>();
+
+Configura valor para thread
+t1.set(valor);
+
+recuperar valor para thread
+t1.get();

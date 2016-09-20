@@ -1,0 +1,363 @@
+No JPA temos anotações para vários tipos de relacionamentos. Sabendo que temos uma classe Produto e que um produto tem uma lista de categorias como no código abaixo:
+@Entity
+public class Produto {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    private Loja loja;
+
+    private List<Categoria> categorias = new ArrayList<>();
+
+    // código omitido
+}
+Qual anotação usar para esse relacionamento?
+
+	R:Poderiamos ter pensado em um relacionamento do tipo um para muitos(@OneToMany), o problema dessa abordagem e´ que cada categoria seria de apenas um produto e, como provavelmente teremos dois produtos associados a tecnologia por exemplo, acabari´amos com va´rias categorias com nomes repetidos cadastradas.
+	Já que não queremos manter categorias duplicadas, o que melhor encaixa nesse cenário é o relacionamento de muitos para muitos(@ManyToMany).
+
+	As alternativas @OneToOne e @ManyToOne não fazem sentido por termos várias categorias e não apenas uma.
+	
+	
+	
+Como vimos, podemos pensar no relacionamento entre Produto e Categoria como @OneToMany. Será que essa é a melhor forma de interpretar esse relacionamento?
+	R:No nosso sistema de catálogos, vários produtos compartilham categorias. Ao colocarmos @OneToMany uma mesma categoria só servirá para um único produto o que fará com que apareçam várias categorias repetidas. Ao usar @ManyToMany a JPA criará uma tabela de relacionamento onde cada registro será composto de chaves primárias das duas tabelas.
+	
+--------------------------------------------------------------------------
+criteria api
+	
+Usamos a CriteriaBuilder para criar a CriteriaQuery além de criar Predicates, Expressions e outras coisas.
+
+Exemplo do uso de criteria
+
+	public List<Produto> getProdutos(String nome, Integer categoriaId, Integer lojaId) {
+		//criando o criteria
+		CriteriaBuilder criteriaBuilder = em.getCriteriaBuilder();
+		//criando o criteriaquery
+		CriteriaQuery<Produto> query = criteriaBuilder.createQuery(Produto.class);
+		//definindo o root da query(select * from produto)
+		Root<Produto> root = query.from(Produto.class);
+		
+		//Definindo os predicates da query(aqui são os filtros)
+		Path<String> nomePath = root.<String> get("nome");
+		Path<Integer> lojaPath = root.<Loja> get("loja").<Integer> get("id");
+		Path<Integer> categoriaPath = root.join("categorias").<Integer> get("id");
+		
+		//lista de predicates que sera colocado na clausula where
+		List<Predicate> predicates = new ArrayList<>();
+
+		if (!nome.isEmpty()) {
+			Predicate nomeIgual = criteriaBuilder.like(nomePath, nome);
+			predicates.add(nomeIgual);
+		}
+		if (categoriaId != null) {
+			Predicate categoriaIgual = criteriaBuilder.equal(categoriaPath, categoriaId);
+			predicates.add(categoriaIgual);
+		}
+		if (lojaId != null) {
+			Predicate lojaIgual = criteriaBuilder.equal(lojaPath, lojaId);
+			predicates.add(lojaIgual);
+		}
+		
+		//colocando os predicates na clausula where
+		query.where((Predicate[]) predicates.toArray(new Predicate[0]));
+
+		TypedQuery<Produto> typedQuery = em.createQuery(query);
+		return typedQuery.getResultList();
+
+	}
+
+
+Para conseguirmos navegar até os atributos de uma entidade, precisamos de uma raiz (Root). Qual das formas abaixo nos fornece um Root?
+	R:O Root é define qual entidade estamos buscando, o que seria análogo na SQL a cláusula from. Portanto usamos a classe CriteriaQuery, que é a responsável em montar a query.
+		CriteriaBuilder builder = em.getCriteriaBuilder();
+		CriteriaQuery<Produto> query = builder.createQuery(Produto.class);
+		Root<Produto> produtoRoot = query.from(Produto.class);
+		
+Desde a versão 3, o Hibernate possui uma API própria para montar as pesquisas: a Criteria. A aceitação do mercado foi bem grande e por isso, na versão 2 da JPA, ela virou especificação
+porem existem varias diferenças da especificação para a criteria do hibernate ****************** ESTUDAR MAIS SOBRE (a implementação do hibernate é menos verboso)
+
+-----------------------------------------------------------------------------------------------
+
+Quando temos comportamentos lazy podemos nos deparar com alguns problemas como por exemplo.
+	Eu carrego um produto usando o find e fecho meu entitymanager, mas este produto possui uma lista de categorias,
+	quando eu for pegar estas categorias o meu entitymanager estara fechado, logo ira gerar uma exception, para isso foi criado um pattern chamado  Open EntityManagerInView
+	
+Open EntityManagerInView
+	Basicamente consiste em deixar o entityManager aberto durante todo o request e fecha-lo apenas no fim. Podemos usar um componente que intercepta a requisição, abra o EntityManager no início e o feche no fim(um filter por exemplo)
+	
+Podemos deixar de usar o comportamento lazy tanto mudando na propria anotação da entidade e mudando para eager ou na query usar o join fetch
+	Ex: return em.createQuery("from Produto p join fetch p.categorias", Produto.class).getResultList(); -->porem isso pode retornar resultados repetidos, para arrumar basta usar um distict na query
+		return em.createQuery("select distinct p from Produto p join fetch p.categorias", Produto.class).getResultList();
+
+
+O problema do N +1
+	Para cada produto da minha lista, estamos buscando suas categorias. No nosso caso temos 5 produtos, por causa disso totalizamos 6 selects: um para buscar os produtos e 5 para buscar as categorias dos produtos.
+	Vale lembrar que o uso do OpenEntityManagerInView não causa o problema (apenas torna mais fácil sua ocorrência) e que sua causa não é o comportamento lazy , já que ele também ocorrerá caso configurarmos explicitamente o relacionamento como Eager
+	
+	Para acabar com este problemas podemos:
+	Usar queries planejadas dizendo qual relacionamento queremos trazer em uma query. Dessa forma, os produtos já viriam com as categorias carregadas antecipadamente mesmo que o relacionamento continue sendo tratado como lazy.
+	usando o join fetch na query ex: em.createQuery("from Produto p join fetch p.categorias", Produto.class).getResultList();
+	
+-----
+Uma alternativa às queries planejadas é um recurso que entrou na versão 2.1 da especificação chamado EntityGraphs. Com esse recurso podemos dizer à JPA quais relacionamentos queremos trazer nas queries. Alguns providers já forneciam um recurso parecido como no caso do Hibernate Fetch Profiles e o Eclipse Link Fetch Groups.
+
+Para montar um EntityGraphs basta usarmos a anotação @NamedEntityGraphs na declaração da classe:
+	@NamedEntityGraphs()
+
+	@Entity
+	public class Produto {
+
+Essa anotação recebe uma lista de @NamedEntityGraph com todos os grafos de relacionamento que queremos montar para essa entidade:
+	@NamedEntityGraphs({
+		@NamedEntityGraph(name = "produtoComCategoria") 
+	})
+
+	@Entity
+	public class Produto {
+
+Ao montar um grafo, precisamos definir um nome e todos os atributos que queremos trazer junto ao grafo:
+	@NamedEntityGraphs({
+		@NamedEntityGraph(name = "produtoComCategoria", 
+						  attributeNodes = { 
+								@NamedAttributeNode("categorias") 
+						  }) 
+	})
+
+	@Entity
+	public class Produto {
+
+Ao realizar a busca normalmente pela lista de produtos, devemos dizer qual grafo queremos utilizar passando uma dica na query:
+	public List<Produto> getProdutos() {
+			return em.createQuery("select distinct p from Produto p", Produto.class)
+					.setHint("javax.persistence.loadgraph", em.getEntityGraph("produtoComCategoria"))
+					.getResultList();
+	}
+
+Utilizando EntityGraphs podemos receber no método o nome do grafo e assim alternar entre os grafos em tempo de execução. 
+
+Podemos usar uma outra opção de dica (hint) para trabalharmos com Entity Graphs. Lembrando que o javax.persistence.loadgraph que trata os atributos configurados no grafo como Eager e os demais seguem seu FetchType padrão. A outra opção seria usar javax.persistence.fetchgraph que trata os atributos não especificados como lazy.
+-----
+
+Você já deve ter percebido que, quando realizamos uma alteração do produto em apenas um campo, todos os outros também entram na query. No nosso caso se alterarmos o nome, por exemplo, a query final é:
+update Produto set descricao=?, linkDaFoto=?, loja_id=?, nome=?, preco=?, version=? where id=? and version=?
+
+Pesquise sobre @DynamicUpdate e sobre como podemos utilizá-lo no nosso produto.*********************** Pesquise sobre @DynamicUpdate
+	A anotação @DynamicUpdate permite que estejam na query apenas os campos que foram alterados. Nesse caso, a query do update será:
+	update Produto set nome=? where id=?
+	
+--------------------------------------------------------------------------------------------------------------------
+Pool de conexão
+
+iremos usar a lib c3p0 para criar o pool de conexões
+
+criaremos um datasource primeiro
+		public DataSource getDataSource() throws PropertyVetoException {
+	    
+		ComboPooledDataSource dataSource = new ComboPooledDataSource();
+		dataSource.setDriverClass("com.mysql.jdbc.Driver");
+		dataSource.setUser("usuario");
+		dataSource.setPassword("admin");
+		dataSource.setJdbcUrl("jdbc:mysql://localhost/projeto_jpa");
+		
+		//sera criada 5 conexoes de ante mão
+		dataSource.setMinPoolSize(5);
+		//maximo de conexões que sera aberto(o padroão é 15)
+		dataSource.setMinPoolSize(10);
+		//distribui as tarefas do pool em algumas threads(no caso 5) o padrão é 3
+		dataSource.setNumHelperThreads(5);
+
+	    return dataSource;
+	}
+	
+O c3p0 tem um limite min de conexões que vc pode configurar, caso este limite exceda ele ira criar mais conexões de acordo com a necessidade, ate atingir o valor max do pool,
+quando isso acontecer o proximo cliente ira ter que esperar uma conexão ficar disponivel para poder usar.
+
+O que aconteceria se apos iniciar nosso pool de conexões o mysql fosse derrubado e voltado apos 10Segundos?
+	R:Ao acessar a aplicação recebemos um erro. Isso acontecer porque o Pool tentará usar as conexões que foram armazenadas que estarão quebradas após reiniciar o MySQL. Precisamos ensinar o pool a matar as conexões que ficam ociosas por muito tempo, eliminando o risco de escolher uma conexão quebrada. Fazemos isso chamando o método setIdleConnectionTestPeriod(//segundos); na configuração do DataSource.
+	
+	public ComboPooledDataSource getDataSource() throws PropertyVetoException {
+
+		ComboPooledDataSource dataSource = new ComboPooledDataSource();
+
+		dataSource.setDriverClass("com.mysql.jdbc.Driver");    
+		dataSource.setJdbcUrl("jdbc:mysql://localhost/projeto_jpa");
+		dataSource.setUser("root");
+		dataSource.setPassword("");
+
+		dataSource.setMinPoolSize(3);
+		dataSource.setMaxPoolSize(5);
+
+		Linha nova --> dataSource.setIdleConnectionTestPeriod(1); //a cada um segundo testamos as conexões ociosas
+
+		return dataSource;
+	}
+			
+
+PODEMOS CONFIGURAR O C3P0 DIRETO NO HIBERNATE
+	É possível configurar C3P0 sem o Spring, claro! Para tal podemos configurar as propriedades do C3P0 diretamente no persistence.xml, por exemplo:
+
+	Hibernate 3:
+
+		<property name="hibernate.connection.provider_class" value="org.hibernate.service.jdbc.connections.internal.C3P0ConnectionProvider">
+		<property name="hibernate.c3p0.min_size" value="5" />
+		<property name="hibernate.c3p0.max_size" value="20" />
+		<property name="hibernate.c3p0.timeout" value="180" />
+
+	Hibernate 4:
+
+		<property name="hibernate.connection.provider_class" value="org.hibernate.c3p0.internal.C3P0ConnectionProvider">
+		<property name="hibernate.c3p0.min_size" value="5" />
+		<property name="hibernate.c3p0.max_size" value="20" />
+		<property name="hibernate.c3p0.timeout" value="180" />
+	
+	No pom.xml, precisamos declarar a dependência do C3p0:
+
+		<dependency>
+			<groupId>c3p0</groupId>
+			<artifactId>c3p0</artifactId>
+			<version>x.x.x</version>
+		</dependency>
+	
+	Além disso precisamos adicionar mais uma dependência no projeto:
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-c3p0</artifactId>
+			<version>${hibernate.version}</version>
+		</dependency>
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Lock Otimista
+
+Podemos ter problemas quando temos muitos usuarios alterando um mesmo registro:
+	Ex:tenho uma tela de cadastro de produto e dois usuarios abrem esta ao mesmo tempo, um muda o preço e salva e o outro muda o titulo e salva, o ultimo que alterou o titulo vai sobrepor a alteração feita pelo primeiro que alterou o preco,
+	   para isso poderiamos fazer um lock no banco mas isso seria um lock pessimista , mas o jpa tem uma saida, chamada de lock otimista
+	   
+
+O que é Lock pessimista?
+Podemos lidar com esse cenário de algumas formas: Uma abordagem pessimista seria impedir que aconteça o conflito e pedir para o banco de dados travar o registro que está sendo atualizado.
+O JPA dá suporte ao Lock Pessimista. O EntityManager possui um método lock que trava o registro no banco de dados. Assim apenas uma pessoa pode acessar esse registro ao mesmo tempo. Um exemplo de como implementar o Lock Pessimista segue abaixo:
+	EntityManager em1 = // obtem EntityManager
+	EntityManager em2 = // obtem EntityManager
+
+	em1.getTransaction().begin();
+	em2.getTransaction().begin();
+
+	Usuario usuarioDoEM1 = em1.find(Usuario.class, 1);
+	em1.lock(UsuarioDoEM1,LockModeType.PESSIMISTIC_WRITE);
+	
+	//OU
+	//Quem quiser acessar o produto de id 1 tera que esperar que ele pare de ser utilizado(que seu estado managed mude)
+	//Produto produto = manager.find(Produto.class, 1, LockModeType.PESSIMISTIC_READ); //trava o registro
+	
+	usuarioDoEM1.setNome("Maria");
+
+	Usuario UsuarioDoEM2 = em2.find(Usuario.class, 1);
+	em2.lock(UsuarioDoEM2, LockModeType.PESSIMISTIC_WRITE); //
+	
+	.Essa solução tem como consequência um grande gargalo de escalabilidade, já que no momento em que travamos um registro os demais ficarão esperando a liberação do mesmo para realizar a edição
+	
+	
+VAMOS USAR O LOCK OTIMISTA PARA RESOLVER ESTE PROBLEMA
+	.Uma solução otimista consiste em permitir que os conflitos ocorram, detectando-os e tomando medidas para corrigí-los. A ideia é que a aplicação/banco nunca trave o acesso ao registro, sendo otimista, assumindo que isso é uma situação não tão frequente. Mas o que faremos quando acontece uma atualização concorrente? Temos que prevenir a inconsistência dos dados, lançando uma exception ao cliente.
+	.Usando @Version
+		A JPA oferece suporte a lock otimista através da anotação @Version
+		@Entity
+		public class Produto {
+			// ...
+
+			@Version
+			private Integer versao; // não esqueça do getter e setter
+
+			// ...
+		}
+		Para guardar a versão, podemos usar um campo numérico ou um timestamp (Calendar ou Date). Se a entidade possuir @Version em todo update feito, o hibernate irá verificar automaticamente o valor desse campo. Caso o registro no banco possua um valor menor do que o está sendo enviado para o campo versao, ele aceita a atualização e incrementa seu valor. Caso possua um valor maior, será disparado uma exceção do tipo StaleObjectStateException dentro de uma javax.persistence.OptimisticLockException.
+	
+	.Testando o Lock Otimista
+		Como estamos trabalhando na web, vamos precisar enviar na página de edição o valor do campo versao. Portanto, na página produto/form.jsp precisaremos adicionar um campo hidden para enviar esse valor:
+
+		<input type="hidden" name="versao" value="${produto.versao}">
+		
+		
+O que caracteriza o Lock Otimista?
+	R:Colocar um atributo de versionamento no modelo. Qualquer alteração feita irá gerar o incremento, automaticamente, deste atributo. Ao atualizar o registro, a versão do registro precisa ser igual a versão do objeto.
+	
+	
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+CAHE
+
+Quais dessas afirmações se encaixa na definição de cache?
+	R:O cache serve para melhorar a performance da nossa aplicação, pois o sistema primeiro consulta o cache e verifica se ele já contêm a informação que buscamos, antes de acessar o banco de dados, que é uma operação computacionalmente custosa.
+	
+O que é o cache de primeiro nível e qual problema de utiliza-lo em uma aplicação Web ?
+	R:O cache de primeiro nível é o cache que já vem por padrão nos EntityManagers. Ele nos impede de carregar duas vezes a mesma entidade do banco, evitando assim um acesso desnecessário.
+	
+	Resposta com minhas palavras: O cache de primeiro nivel é um cache padrão do entityManager, porem ele é unico por cada entityManager, logo se eu possuo dois entityManager , um não ira compartilhar o cache do outro, e na aplicação web como abrimos um entityManger a cada request este cache iria se perder
+
+Qual nome da propriedade que devemos colocar com o valor true para habilitar o cache de segundo nível no hibernate, que por padrão vem desabilitado?
+	R:No o persistence.xml, adicionaríamos uma tag com a propriedade(no unit persist):
+	  <property name="hibernate.cache.use_second_level_cache" value="true" />
+	  
+Quando os objetos do cache de segundo nível são invalidados ?	  
+	R:O cache invalida seus dados quando acontece alguma operação de escrita em uma entidade, pois seus dados ficam desatualizados em relação ao banco de dados. Então para manter a consistência dos dados, ele invalida os seus dados.
+	
+Além de habilitar o cache de segundo nível, devemos também dizer ao Hibernate qual provider queremos utilizar. Qual valor devemos setar com a propriedade hibernate.cache.region.factory_class para configurar o provider EhCache ?
+	R:No persistence.xml: <property name="hibernate.cache.use_second_level_cache" value="org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory" />
+	
+	
+	
+Para utilizarmos o cache de segundo nível, devemos indicar ao Hibernate quais entidades desejamos que sejam salvas no cache, com a anotação @Cache. Mas ao fazermos isso o código abaixo não compila! O que está errado com ele ?
+	@Entity
+	@Cache
+	public class Produto {
+		// Conteúdo da classe
+	}
+	
+	R:Além de indicar qual classe queremos salvar no cache com a anotação @Cache também temos que informar ao Hibernate qual estratégia de concorrência queremos utilizar.
+	  O problema do código está exatamente aí, pois ele não diz qual estratégia usar!
+
+	  Se acrescentarmos a estratégia NON_STRICT_READ_WRITE por exemplo, ele compilará normalmente, veja:
+		@Entity
+		@Cache(usage=CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+		public class Produto {
+			// Conteúdo da classe
+		}
+		
+A estratégia READ_ONLY deve ser utilizada quando uma entidade não deve ser modificada.
+
+A estratégia READ_WRITE deve ser utilizada quando uma entidade pode ser modificada e há grandes chances que modificações em seu estado ocorram simultaneamente, é a estratégia que mais consome recursos.
+
+A estratégia NON_STRICT_READ_WRITE deve ser utilizada quando uma entidade pode ser modificada mas é incomum que as alterações ocorram ao mesmo tempo. Ela consome menos recursos que a estratégia READ_WRITE e é ideal quando não há problemas de ler dados inconsistentes quando há alterações simultâneas.
+
+A estratégia TRANSACTIONAL deve ser utilizada em ambientes JTA, como por exemplo em servidores de aplicação. Como utilizamos Tomcat com Spring (sem JTA) essa opção não funcionará.
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+MONITORAMENTO
+	Habilitando o statistics
+	//Gerar estatistica
+	props.setProperty("hibernate.generate_statistics", "true");
+	
+	//gerando o statistics
+	public Statistics statistics(EntityManagerFactory emf) { 
+	    //aqui esta no contexto do spring mas basta criar um entityManager e chamar o metodo unwrap como esta abaixo
+		return emf.unwrap(SessionFactory.class).getStatistics();
+	}
+	
+	//Acessando algumas informações do statistics
+	<tr>
+		<td>Cache</td>
+		<!-- Objetos no cache -->
+		<td>${statistics.queryCacheHitCount}</td>
+		<!-- Idas ao banco para buscar e carregar os objetos -->
+		<td>${statistics.queryCacheMissCount}</td>
+		<!-- Conexoes abertas-->
+		<td>${statistics.connectCount}</td>
+	</tr>
+	
+http://blog.caelum.com.br/cacando-seus-gargalos-com-o-hibernate-statistics/ -->Artigo sobre statistics do hibernate , bom dar uma olhada
+
+http://docs.jboss.org/hibernate/core/4.3/javadocs/org/hibernate/stat/Statistics.html --> javadoc do statistics
+
+
+http://blog.caelum.com.br/os-7-habitos-dos-desenvolvedores-hibernate-e-jpa-altamente-eficazes/ --> DICAS PARA DESENVOLVEDORES HIBERNATE-JPA

@@ -1,0 +1,388 @@
+RAD(Desenvolvimento Rápido de Aplicações) ->ambiente de desenvolvimento e os componentes reutilizáveis favorecem a criação rápida de aplicações.
+
+Cliente desktop (gordo)
+cliente web(magro)
+
+O JSF é um framework que une o melhor do desenvolvimento Web e Desktop. Pensando assim, podemos dizer que o JSF:
+	R:Junta a facilidade de manutenção e implantação de aplicações web com as vantagens do desenvolvimento orientado ao componente utilizado na programação Desktop durante anos.
+
+São características comuns no desenvolvimento RAD (Rapid Application Development) e que também podem ser encontradas no desenvolvimento com JavaServer Faces:
+	R:uso de componentes
+	  desenvolvimento orientado ao evento
+	  desenvolvimento stateful
+
+
+O web.xml é referente a especificação servlet
+
+No padrão MVC (Model-View-Controller), qual é o papel do modelo?
+	R: Representar as regras de negócio
+
+
+
+Os componentes definidos na página xhtml serão instanciados pelo controlador. O resultado disso é a árvore de componentes que fica guardada em memória. Em que momento o controlador cria esta árvore?
+	R:Apenas na primeira requisição (no primeiro GET).
+
+Onde o controlador guarda a árvore de componentes?
+	R: HttpSession
+	
+	
+Para recuperar a arvore de componentes da sessão o jsf precisa saber qual arvore recuperar	para isso ele gera um input hidden com a identificação da arvore de componentes
+	O input é algo parecido abaixo:
+	<input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="1061716021081662360:4138942744536137632" autocomplete="off" />
+	O número é a identificação da árvore de componentes. Com aquela identificação o controlador consegue recuperar a árvore da HttpSession já que na sessão vai ter pelo menos uma árvore para cada página.
+	
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+A arvore de componentes é criada em cada request(caso o escopo do managedBean seja requestScoped)
+	Caso seja um viewScop a arvore so é carregada quando a pagina é aberta a primeira vez e morre quando é alterado a pagina
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+Converção e validação de dados
+
+O JSF não sabe por padrão que formato de data usar. Que conversor devemos usar para formatar a data?
+	R:Deve ser usado o componente f:convertDateTime para formatar a data, porém o conversor sabe lidar apenas com objetos do tipo java.util.Date. Por isso, devemos fazer um binding para #{livroBean.livro.dataLancamento.time}, onde time corresponde ao método getTime() da classe Calendar, que retorna um objeto do tipo java.util.Date.
+	Devemos também definir um pattern. No nosso caso queremos dia/mês/ano então usaremos dd/MM/yyyy:
+
+	<h:inputText id="dataLancamento" value="#{livroBean.livro.dataLancamento.time}">
+		<f:convertDateTime pattern="dd/MM/yyyy" timeZone="America/Sao_Paulo" />
+	</h:inputText>
+	
+No JSF, podemos criar nossos próprios validadores. Para isso, devemos criar um método em um ManagedBean, passando como parâmetros um FaceContext, um UIComponent e um Object. O que representam estes parâmetros, respectivamente?
+	R:Um contexto que permite obter informações da view processada no momento, o componente da view que está sendo validado e um objeto que representa o valor digitado pelo usuário.
+	
+Após criarmos nosso validador, como fazemos para usá-lo?
+	R:Cada componente de input possui um atributo validator onde passamos uma expressão como parâmetro para chamar o método de validação no ManagedBean. Por exemplo:
+	<h:inputText id="isbn" value="#{livroBean.livro.isbn}" validator="#{livroBean.comecaComDigitoUm}"/>
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+AJAX
+
+<h:head/> --> ja importa o javascript (tenho que importar o javascript para poder utilizar requisições ajax)
+
+Que componente do JSF nos permite utilizar AJAX?
+	R:f:ajax
+
+Como indicamos os campos que serão submetidos com a requisição ajax?
+	R:Indicamos os IDs dos campos no componente f:ajax através do atributo execute.
+		<h:commandButton value="Gravar Autor" action="#{livroBean.gravarAutor}" >
+			<f:ajax execute="autor" />
+		</h:commandButton>
+	
+Por que é necessário utilizar o componente h:head para trabalharmos com AJAX?
+	R:Como o AJAX depende diretamente de JavaScript, é necessário que o JSF importe sua própria biblioteca JavaScript. Isso só será feito, caso o componente h:head esteja presente.
+
+Como indicamos os componentes que devem ser atualizados após a requisição AJAX?
+	R:Referenciamos os IDs dos componentes que serão atualizados através do atributo render no componente f:ajax.
+		<h:commandButton value="Gravar Autor" action="#{livroBean.gravarAutor}" >
+			<f:ajax execute="autor" render="tabelaAutores"/>
+		</h:commandButton>
+	
+Como podemos referênciar à IDs de componentes que não se encontram dentro do h:form?
+	R:Basta que a ID tenha o caracter : antes, dessa forma:
+	 <f:ajax render=":tabelaLivros" execute="@form" />
+	
+
+Como fazemos para submeter todos os campos do formulário?
+	R: Atribuímos o valor @form ao atributo execute do componente f:ajax.
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+CICLO DE VIDA JSF
+
+No modelo MVC é o controlador que decide qual view a usar e controla todo o fluxo do JSF.
+
+configurando um phaselistener
+no faces config eu adiciono a tag
+	 <lifecycle>
+        	<phase-listener>br.com.caelum.livraria.util.LogPhaseListener</phase-listener>
+    	</lifecycle>
+e crio a classe
+
+JSF TEM 6 FASES
+http://s3.amazonaws.com/caelum-online-public/JSF/cap7-img7-todas-fases.png	-->AQUI TEM UM DESENHO OTIMO DAS 6 FASES
+
+QUANDO EU FAÇO APENAS UM CARREGAMENTO DE PAGINA E NÃO PRECISO APLICAR NENHUM VALOR O JSF EFETUA APENAS A PRIMEIRA E ULTIMA FASES
+CASO DE MERDA NA FASE 3 DE CONVERÇÃO E VALIDAÇÃO ELE PULA DIRETO PARA A FASE 6
+	
+public class LogPhaseListener implements PhaseListener{
+
+    private static final long serialVersionUID = 1L;
+
+    @Override
+    public void afterPhase(PhaseEvent arg0) {
+    }
+
+    @Override
+    public void beforePhase(PhaseEvent event) {
+        System.out.println("FASE: " + event.getPhaseId());
+    }
+
+    @Override
+    public PhaseId getPhaseId() {
+        //aqui eu retorno o id da phase que eu quero escutar, neste caso quero escutar todas as fases por isso retorno ANY_PHASE
+	return PhaseId.ANY_PHASE;
+    }
+}
+
+
+
+
+O que acontece na terceira fase PROCESS_VALIDATION?
+	R:Na terceira fase acontece a conversão, se for preciso, e a validação. Se há um problema de conversão ou validação, é criado uma mensagem de erro e o controlador pula automaticamente as fases quatro e cinco para renderizar o HTML com as mensagens de erro através do componente h:messages.
+
+O método gravar associado com o comando abaixo é executado em qual fase?
+<h:commandButton value="Gravar" action="#{livroBean.gravar}" />
+	R:O método é chamado na fase INVOKE_APPLICATION que é a quinta fase no ciclo da vida JSF.
+
+O método form associado com o comando abaixo é executado em qual fase?
+<h:commandButton value="Gravar" action="#{livroBean.form}"  immediate="true"/>
+	R:O método é chamado na fase APPLY_REQUEST_VALUES pois o comando tem o atributo immediate.
+
+
+Ao executar o método abaixo é feito um redirecionamento no lado do servidor:
+@ManagedBean
+public class Bean {
+
+    public String form() {
+        return "produto";
+    }
+}
+Como faremos para redirecionar no lado do cliente (pelo navegador)?
+	R:O padrão JSF é redirecionar para página no lado do servidor. Para chamar a página pelo navegador, ou seja enviar uma segunda requisição é preciso adicionar no retorno o parâmetro faces-redirect=true:
+@ManagedBean
+public class Bean {
+
+    public String form() {
+        return "produto?faces-redirect=true";
+    }
+}
+
+obs:caso isso não seja feito o cliente sempre tera a URL atrasada ex: estou na pagina funcionario.xhtml e chamo um metodo que retorna a pagina produto.xhtml, a url no browser do cliente ira continuar como funcionario.xhtml, pois quem redireciona é o proprio servidor, agora colocando faces-redirect=true ele faz a requisição e o servidor devolve para o cliente com um status 301(se eu nã me engano) ao o cliente efetua uma nova requisição para a pagina correta, atualizando a url 
+
+http://s3.amazonaws.com/caelum-online-public/JSF/cap7-img9-forward.png -->IMAGEM REPRESENTANDO O FLUXO SEM FACES REDIRECT
+http://s3.amazonaws.com/caelum-online-public/JSF/cap7-img10-redirect.png -->IMAGEM REPRESENTANDO O FLUXO COM FACES REDIRECT
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+FACELETS
+
+Qual tag do JSF usamos para adicionar uma imagem à nossa página?
+	R:Definindo o alias do namespace com a letra h, usamos a tag h:graphicImage para adicionar uma imagem à nossa página. Lembrando que as imagens usadas devem estar dentro do diretório WebContent/resources/, e para uma organização melhor, dentro de resources/ criamos uma pasta img. Dentro da tag devemos definir dois atributos, o library, que preenchemos com o valor img, que é a pasta que contém nosso logo, e o name, onde é definido o nome do arquivo.
+
+Qual namespace utilizamos para importar a biblioteca de facelets?
+	R: namespace utilizado para importar a biblioteca de facelets é xmlns:ui="http://java.sun.com/jsf/facelets".
+
+Como fazemos a associação de uma página com um template?
+	R:A associação é feita envolvendo todo o conteúdo da página que importará o template pela tag ui:composition, indicando pelo atributo template, o template a ser associado.
+	
+------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Vimos no video como alterar um livro. Colocamos na tabela uma coluna a mais para o link que carregar o livro para alteração:
+<h:commandLink value="Alterar" action="#{livroBean.carregar(livro)}" />
+O método carregar coloca o livro do parâmetro no formulário:
+
+public void carregar(Livro livro) {
+    System.out.println("Carregando livro " + livro.getTitulo());
+    this.livro = livro;
+}
+Repare que esse método faz muito pouca coisa, é apenas um atribuição do parâmetro livro para o atributo this.livro (parecido com um setter). Há um atalho para tal atribuição que JSF oferece. Podemos usar o componente f:setPropertyActionListener com o mesmo efeito:
+
+<h:commandLink value="Alterar"  />
+    <f:setPropertyActionListener target="#{livroBean.livro}" value="#{livro}" />
+</h:commandLink>
+Repare que o h:commandLink não possui o atributo action. A ação é definida pelo componente f:setPropertyActionListener.
+
+Assim não precisamos do método carregar, mas é preciso implementar o setter para o atributo livro pois o atributo target exige o setLivro no LivroBean.
+
+O componente f:setPropertyActionListener existe pois em versões anteriores do JSF não era possível passar parâmetros no método pelo atributo action do comando.
+
+<!-- isso não funcionava no JSF 1.x -->
+<h:commandLink value="Alterar" action="#{livroBean.carregar(livro)}" />
+Hoje em dia podemos utilizar esses parâmetros na EL, então não há mais tanta necessidade de usar o componente f:setPropertyActionListener.
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+NOVIDADES DO JSF 2.2
+
+Qual é o novo namespace da taglib html da especificação JSF?
+	R:http://xmlns.jcp.org/jsf/html
+
+
+viewAction(executar uma rotina ao carregar a pagina e com isso é possivel pegar parametro passados na URI)
+Ex: se eu quiser carregar um autor pelo id via get -->http://localhost:8080/livraria/autor.xhtml?autorId=1 posso usar as tags para pegar esse valor e setar no meu managed bean
+
+		//Isso vai ser executado no carregar da pagina
+		<f:metadata>
+		    //Pega o valor que eu passei via get e seta no id do autor
+			<f:viewParam name="autorId" value="#{autorBean.autor.id}"/>
+		    //chama a rotina carregar peloId | o atributo if significa que so ira ser chamado o carregaPeloId de o id for != de nulo
+			<f:viewAction action="#{autorBean.carregaPelaId}" if="#{autorBean.autor.id != null}"/>
+		</f:metadata>
+		
+No jsf 2.2 podemos passar atributos para que o renderizaedo de html coloque em nossas tags
+Ex: o html 5 existe alguns tipos de input que ja fazem validações como por exemplo email, se eu criar um <input type="email"/> o proprio cliente vai verificar se e um email valido,
+	para que eu possa passar esse atributo para o jsf e ele utilizar deste beneficio eu tenho que usar a tag <f:passThroughAttribute name="type" value="email"/>
+		Ex:
+			<h:inputText id="email" value="#{autorBean.autor.email}" >
+				<f:passThroughAttribute name="type" value="email"/>
+			</h:inputText>
+			-->Agora quando o jsf for renderizar esta tag ele ira colocar o atributo type com o valor email
+			
+			
+			
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+quando for usar inputs de senha posso usar tanto o inputsecret do jsf quanto o do proprio html5
+
+		-->html 5
+		<h:inputText id="senha" value="#{loginBean.usuario.senha}" >
+			<f:passThroughAttribute name="type" value="password"/>
+		</h:inputText>
+		
+		-->JSF
+		<h:inputSecret id="senha" value="#{loginBean.usuario.senha}" required="true" />
+		
+		
+Quando usamos jsf sabemos que teremos pouco controle do html porem caso seja necessario usar tags nativas do html:
+	Podemos usar tags nativas do html direto e passarmos os atributos jsf por meio do Pass-though Elements
+		Ex:<input type="email" jsf:id="email" jsf:value="#{autorBean.autor.email}" />
+		
+		Obs:Temos que importar o namespace xmlns:jsf="http://xmlns.jcp.org/jsf"
+		
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+AUTORIZAÇÃO
+
+UM EXEMPLO DE COMO EFETUAR AUTORIZAÇÃO USANDO O PHASELISTENER DO JSF
+
+//INICIO
+public class Autorizador implements PhaseListener{
+
+	private static final long serialVersionUID = 9039601385787424895L;
+
+	@Override
+	public void afterPhase(PhaseEvent event) {
+		 FacesContext context = event.getFacesContext();
+		 
+		 //Pegando o nome da pagina que estamos tentando acessar
+		 String nomePagina = context.getViewRoot().getViewId();
+		 
+		 System.out.println(nomePagina);
+		  
+		 if("/login.xhtml".equals(nomePagina)){
+			 return;
+		 }
+		 
+		 Usuario usuarioLodo = (Usuario)context.getExternalContext().getSessionMap().get("usuarioLogado");
+		 
+		 if(usuarioLodo != null){
+			 return;
+ 		 }
+		 
+		 //fazendo a navegação de forma programatica
+		 NavigationHandler handler = context.getApplication().getNavigationHandler();
+		 //passando o contexto, 
+		 //O segundo parametro é um apelido que poderiamos dar(assim como configuramos navegações implicitas no jsf onde podemos passar uma palavra ex:ok e essa palavra remete a uma url, neste caso deixamos nulo pois não precisamos)
+		 //O terceiro parametro é efetivamente a pagina que queremos ser redirecionadoss
+		 handler.handleNavigation(context, null, "/login?faces-redirect=true");
+		 
+		 //Pulas as fazes e vai direto para a renderização da resposta
+		 context.renderResponse();
+	}
+
+	@Override
+	public void beforePhase(PhaseEvent event) {
+	}
+
+	@Override
+	public PhaseId getPhaseId() {
+		//Indico que eu so quero tratar a primeira fase do jsf
+		return PhaseId.RESTORE_VIEW;
+	}
+
+}
+//FIM
+
+
+Uma coisa interessante é exibir o nome do usuário que está na sessão na página. Como podemos fazer? Uma dica: pesquise sobre como acessar o atributo da sessão via Expression Language.
+
+	R:
+	Podemos acessar o mapa da sessão através da expressão:
+	<h:outputText value="#{sessionScope['usuario']}" />
+
+	Queremos pegar o POJO usuario no mapa da sessão. E podemos acessar a propriedade nome dentro dele:
+
+	<h:outputText value="#{sessionScope['usuario'].nome}" />
+
+	Você poderia utilizar o h:outputText no nosso template!		
+	
+	
+Antes do jsf 2.x as navegações eram feitas de formas mais burocraticas
+	Ex: jsf 2.x
+	public String gravar() {
+        //codigo omitido
+
+        return "livro?faces-redirect=true";
+    }
+	
+	agora no jsf 1.x
+	
+	public String gravar() {
+        //codigo omitido
+
+        return "ok"; //devolvendo um sinal ou outcome
+    }
+	
+	e a navegação em si tinha que ficar no faces config
+	<navigation-rule>
+		<from-view-id>autor.xhtml</from-view-id>
+		<navigation-case>
+			<from-outcome>ok</from-outcome>
+			<to-view-id>livro.xhtml</to-view-id>
+			<redirect />
+		</navigation-case>
+	</navigation-rule>
+	
+	-->esta navegação ainda e valida no jsf 2.x
+	
+----------------------------------------------------------------------------------------
+
+Quando queremos que nossas mensagens durem por duas requisições podemos usar o escopo flash
+	Ex:quando eu faço um logout e redireciono a pagina o browser limpa tods os dados da requisição logo minhas mensagens serão limpas tambem, para manter elas eu uso o escopo flash
+	
+		
+	public String efetuarLogin(){
+		System.out.println("Fazendo login do usuario " + this.usuario.getEmail());
+		FacesContext context = FacesContext.getCurrentInstance();
+		boolean existe = new UsuarioDao().existe(this.usuario);
+		
+		if(existe){
+			context.getExternalContext().getSessionMap().put("usuarioLogado", this.usuario);
+			return "livro?faces-redirect=true";
+		}
+		
+		//Aqui informa que a mensagem que eu adicionei vai durar por duas requisições
+		context.getExternalContext().getFlash().setKeepMessages(true);
+		context.addMessage(null,new FacesMessage("Usuario não encontrado"));
+		
+		
+		return "login?faces-redirect=true";
+	}
+	
+	
+Usando o atributo render para renderizar a palavra logout apenas quando o usuario estiver logado
+	<h:form rendered="#{usuarioLogado != null}">
+            <h:commandLink value="Logout" action="#{loginBean.deslogar}" />
+    </h:form>
+	
+
+Sabemos que é uma boa prática sempre fazer um redirecionamento após submeter um formulário, para limpar os dados da requisição.
+Só que configurando um faces-redirect após a requisição inicial, as nossas mensagens deixam de ser exibidas já que o FacesContext só dura uma requisição. Como podemos resolver esse problema do redirecionamento sem perder nossas mensagens de validação ?
+	R:Podemos resolver isso atráves do ExternalContext() , aonde possímos um escopo flash que podemos utilizar o método setKeepMessages(true) para guardar as mensagens por duas requisições.
+		context.getExternalContext().getFlash().setKeepMessages(true);
+		
+		
+		
+---------------------------------------------------------------------
+
+		

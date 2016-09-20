@@ -1,0 +1,149 @@
+Diretorio não acessiveis via URI do tomcat
+	Os diretórios existentes que são ignorados são o WEB-INF e o META-INF.
+	
+onde os arquivos .class são jogados? Seguindo a especificação servlet, qual é o diretório das classes compiladas?
+	Seguindo a especificação Servlet o diretório para as classes se chama WEB-INF/classes.
+	No entanto, o Eclipse inventa uma pasta intermediária. Antes de publicar o projeto no Tomcat, o Eclipse compila para gerenciador/build/classes e dai copiar as classes para WEB-INF/classes.
+	
+Para criar uma servlet com a especificação 3.0 da mesma , basta seguir o exemplo abaixo:
+
+	@WebServlet(urlPatterns="/busca")
+	public class BuscaEmpresa extends HttpServlet {
+
+		//reescrita do doGet/doPost...
+
+	}
+
+Usar get apenas para obter informações do servidor
+o get por padrão é cacheavel
+Existe um problema ao usar get, vamos supor eu quero adicionar uma empresa nova e passo o nome da empresa via get para minha servlet, alguns navegadores cacheam o resultado da pagina logo caso eu queira adiciona a mesma empresa as vezes quando eu chamo denovo para adicionar a empresa o navegador use o cache para recarregar a pagina e acaba não chamando o servidor denovo(CUIDADO COM ISSO)
+
+O post por padrão não e cacheavel por padrão, logo não passaria pelo problema citado acima com o GET
+
+o get tem um limite de envio de dados(pois os valores vão pela url e exstem browser ou proxys que limitam o tamanho da URL, sendo assim,pode ser que vc envie um texto enorme via get e so chegue metade dele na servlet)
+o post não tem limite
+
+O método GET deve ser usado para buscar informações, para requisições que não trazem efeitos colaterais indesejáveis, para requisições que podem ser requisitadas diversas vezes sem causar nenhum dano.
+
+O método POST é considerado um método que efetua uma alteração de estado no servidor - por isso o navegador sempre pergunta se você tem certeza do que faz ao atualizar uma página que fez POST. Ele tem um número ilimitado de bytes que podem ser enviados em seu corpo - incluindo conteúdo binário como imagens - e por padrão não é cacheado (mas pode ser caso o servidor deseje).
+
+Links são métodos GET.
+
+Por fim, existem alguns exemplos que demonstram casos interessantes do mal uso do GET. Uma biblioteca que implementasse a opção de imprimir um livro ou documento através de um link, ou um sistema que permita remover dados através de um link. Links são métodos GET, portanto um plugin do navegador pode desejar buscar o resultado desses métodos de antemão, cacheando localmente o resultado. Quando o usuário clicar no link, ele terá o resultado bem rápido.
+
+O get não suporta conteúdo binário por padrão - se você deseja fazer o upload de um conteúdo como uma imagem JPEG, terá que fazê-lo com outro método.
+
+-----------------------------------------------------------------------------------------------------------
+
+FILTER
+
+Filter na web é a mesma coisa que interceptors em outras arquiteturas
+
+O conceito de filtro é amplamente utilizado em aplicações web como uma maneira de adicionar características a parte da aplicação. Usando a API de servlets basta criar uma classe que implementa Filter e anotá-la com WebFilter. Em outras APIs é comum encontrar o nome de Interceptor ao invés de Filter para o mesmo conceito.
+
+-----------------------------------------------------------------------------------------------------------
+
+COOKIES
+
+--Adicionando um cookie
+Cookie cookie = new Cookie("nome do cookie");
+resp.addcookie(cookie);
+
+cookie é String
+
+--Pegando os cookies
+Cookie[] cookies = req.getCookies();
+for(Cookie cookie:cookies){
+	syso(cookie.getName() + " - " + cookie.getValue())
+}
+
+o tempo default de um cookie usando javaEE com um servlet container é até o navegador ser fechado
+
+--mudar o tempo maximo do cookie
+cookie.setMaxAge(tempo em segudod)
+
+-->desta maneira o cookie ficara ativo por x segundos des da primeira requisição(caso eu queira que a cada requisição ele renove esse tempo eu teria que colocar em algum filter para que ao efetuar a requisição eu adicione mais x segundo no cookie)
+
+cookie.setMaxAge(0) -->remove o cookie
+
+quanto maior o cookie mais lento vai ficar a requisição
+
+o http transporta String
+
+cookie com identificador solto é perigoso(document.cookie="usuario.logado=rodrigo.turini@alura.com.br";) o cliente via javascript pode alterar o cookie como bem entender
+
+cookie guarda informações no formato de "chave=valor"
+
+------------------------------------------------------------------------------------------------------
+SESSION
+
+Para resolver esses problemas do cookie ao invés de deixarmos o identificador do usuário (no nosso caso, o email) no lado do cliente, podemos deixar ele do lado do servidor, e enviar um código aparentemente randômico para ele. Isto é, no login geramos um código e marcamos quem o usuário é
+
+Enviamos para nosso cliente este código. Agora quando ele fizer uma requisição, saberemos baseado no código quem é que está logado
+
+-Criando ou pegando uma sesssion
+ HttpSession session = req.getSession();
+
+-criando atributos em uma session
+ session.setAttribute("usuario.logado", usuario);
+
+-invalidando uma session
+ session.removeAttribute("usuario.logado");
+	OU
+ session.invalidate();
+ 
+Como vimos, é muito mais simples usar a Session do que cookies e em muitos casos é ela a solução de nossos problemas de identificação de usuário. Mas de qualquer maneira devemos sempre tentar minimizar as informações que estão na Session: quanto mais informação nela, mais dados em memória que não podem ser jogados fora até o logout do usuário. Tome muito cuidado com isso. Coloque o mínimo possível de informações na Session.
+
+O uso da session ajuda muito no desenvolvimento do dia a dia mas nunca podemos deixar de lado o fato que objetos colocados nela ficam na memória do servidor: quanto mais usuários e informações nela, maior a chance de estourar a memória.
+
+----------------------------------------------------------------------------------------------
+
+FUNCIONAMENTO SERVLET
+
+A SERVLET É INSTANCIADA UMA UNICA VEZ ASSIM COMO SEU METODO INIT É CHAMADO APENAS NA HORA QUE ELA É CONSTRUIDA
+    Para cada requisição é criada uma nova thread para trabalhar emcima da instancia da servlet(ela não é thread - safe)
+E so é destruida ao parar o servidor
+
+Cuidado ao usar variaveis membro na servlet(variaveis de instancia) , pois como ela não é thread-safe pode ocorrer problemas de concorrencia
+	-de preferencia para variaveis locais
+
+O servlet contêiner instanciará por padrão uma única servlet, o que fica visível pois somente uma vez o construtor e o método init são invocados. Para forçar a invocação do método destroy devemos parar o servidor dando stop no servidor 
+
+------------------------------------------------------------------------------------------------
+
+REDIRECIONAMENTO NO CLIENT E SERVER SIDE
+
+REDIRECIONAMENTO NO CLIENTE
+ resp.sendRedirect("logout.html");
+
+REDIRECIONAMENTO NO SERVIDOR
+  RequestDispatcher dispatcher = req.getRequestDispatcher("/WEB-INF/paginas/logout.html");
+  dispatcher.forward(req, resp);
+ 
+Existem portanto dois tipos de redirecionamento. O primeiro é feito no lado do cliente, através de um retorno de código diferente de 200 (ok), como o 302 (found) - que notifica o usuário final onde deve procurar o resultado de sua requisição. Outra maneira de redirecionar é fazer um server side redirect, onde o cliente nem fica sabendo o que aconteceu. Se ele fizer um refresh da página, passará pela lógica de negócios novamente.
+
+Quando passamos para o cliente redirecionar para /logout.html, ele vai para o local absoluto, isto é:
+http://localhost:8080/logout.html
+
+------------------------------------------------------------------------------------
+
+El
+
+ req.setAttribute("nome", nome);
+
+para acessar no JSP
+ Empresa ${nome} adicionada!
+
+ caso eu tenha que acessar algum metodo como obj.getNome() usando el basta passar obj.nome
+
+
+----------------------------------------------------------------------
+
+taglib
+----------------------------------------------------------------------
+Padrão de controle
+
+Criar um servlet de controle que vai receber a requisição e decidir para qual logica sera despachada
+--------------------------------------------------------------------
+ 
+MVC

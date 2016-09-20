@@ -1,0 +1,114 @@
+As interfaces agora tem os metodos default(que permitem que seja criado um corpo para eles)
+
+A diferenã da interface(que agora pode ter metodos concretos) para uma classe abstrata
+	-a classe abstrata pode ter atributos,estado ja uma interface não(ela não pode ter estado, apenas metodos concretos e os abstratos é claro)
+
+na interface lista agora temos o metodo foreach e o sort(entre outros)
+	Caso eu queira ordenar a lista
+		lista.sort(new Comparator<String>() {
+
+			@Override
+			public int compare(String s1, String s2) {
+				return s1.length() - s2.length();
+			}
+		});
+
+	Caso eu queira iterar sobre os registros
+		palavras.forEach(new Consumer<String>() {
+
+			@Override
+			public void accept(String palavra) {
+				System.out.println(palavra);				
+			}
+		});
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+O lambda funciona com interfaces que tem apenas um metodo abstrato(chamamos estas interfaces de "interface funcional")
+	Obs:Um metodo abstrato mas pode ter outros metodos contanto que sejma default
+O lambda é convertido para uma interface funcional
+
+	SEM LAMBDA
+
+	palavras.forEach(new Consumer<String>() {
+
+			@Override
+			public void accept(String palavra) {
+				System.out.println(palavra);				
+			}
+		});
+
+	COM LAMBDA
+
+	palavras.forEach(palavra -> System.out.println(palavra));
+	--------------------------------------------------------------
+	SEM LAMBDA
+	
+	new Thread(new Runnable() {
+
+		    @Override
+		    public void run() {
+		        System.out.println("Executando um Runnable");
+		    }
+
+	}).start();	
+
+
+	COM LAMBDA
+	new Thread(() -> System.out.println("Executando um Runnable")).start();
+
+
+Este codigo não compila : Object o = s -> System.out.println(s);
+	O código não funciona porque Object não é uma interface funcional.Lembre-se que para trabalhar com lambda, uma interface funcional precisa estar envolvida.
+
+Estudar mais sobre mthods references**********************
+
+Quando os paramtros passados para o metodo são os mesmos do lambda podemos usar o method reference
+	Ex:s -> System.out.println(s) (note que o s antes da "->" é o mesmo que o que eu passo no syso logo eu posso usar o method references)
+		System.out::println
+
+		OU
+
+		Comparator.comparing(s -> s.length())
+		Fica assim
+		Comparator.comparing(String::length)
+
+--------------------------------------------------------------------------------------------
+
+Stream do java são é para vc manipular o fluxo do seu obj. vou colocar alguns exemplos abaixo
+
+	//Estou filtrando todos os cursos com alunos > 50 e estou percorrendo estes cursos que foram retornados
+	cursos.stream().filter(c -> c.getAlunos() > 50).forEach(c -> System.out.println(c.getNome()));
+
+	//Estou filtrando todos os cursos com alunos > 50, transformando esta lista de curso em uma lista de String e posteriormente estou percorrendo esta lista
+	cursos.stream().filter(c -> c.getAlunos() > 50).map(Curso::getNome).forEach(System.out::println);
+	
+	//Estou filtrando todos os cursos com alunos > 50, transformando esta lista de curso em uma lista de inteiros e posteriormente estou percorrendo esta lista
+	cursos.stream().filter(c -> c.getAlunos() > 50).map(Curso::getAlunos).forEach(System.out::println);
+
+-----------------------------------------------------------
+
+A classe Optional nos permite trabalhar com objetos mesmo que eles sejam nulos
+
+Ganhamos muito com essa nova introdução. Assim não precisamos escrever aqueles diversos ifs garantindo que o objeto não é nulo, temos uma forma muito mais interessante de representar nossas intenções. A classe Optional nos oferece uma variedade imensa de novos métodos que nos permite trabalhar de forma funcional com nossos valores, tirando maior proveito dos novos recursos de default methods, lambdas e method reference
+
+cursos.stream().filter(c -> c.getAlunos() > 50).findFirst() -->Este findFisrst devolve um optional
+
+//Este metodo average() retorna a media aritimetica de uma colecao de inteiros
+System.out.println(cursos.stream().mapToInt(c -> c.getAlunos()).average());
+
+Quando eu utilizo o stream ele não altera minha lista corrente ex:
+//Filtrei
+cursos.stream().filter(c -> c.getAlunos() > 50)
+//Neste caso quando for imprimir os elementos ele vai imprimir todos os elementos
+cursos.stream().forEach(c -> System.out.println(c.getNome()))
+
+Caso eu queira por exemplo deste stream retorna uma lista eu tenho que usar o metodo collect
+cursos = cursos.stream().filter(c -> c.getAlunos() > 50).collect(Collectors.toList());
+
+Posso transformar para MAp tambem(ou para qualquer outra subEstrutura de collections)
+Map<String, Integer> cursosMap = cursos.stream().filter(c -> c.getAlunos() > 50).collect(Collectors.toMap(c -> c.getNome(), c-> c.getAlunos()));
+
+--------------------------------------------------------
+
+Nova API de data, dar ujma olhada workspace de data(la tem um programinha com as principais funcionalidades da nova API)

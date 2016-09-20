@@ -1,0 +1,295 @@
+JAX-RS ->Implementação jersey
+
+Temos uma URI que identifica o nosso carrinho, o nosso recurso que está no servidor. E através dessa URI recebo a representação de nosso carrinho, que poderia ser json, xml, html, tem diversos formatos - ou mais especificamente diferentes media types, que podemos trabalhar.
+
+levantar um servidor do Grizzly, compatível com JAX-RS, servlet api e muito mais:
+
+    public static void main(String[] args) throws IOException {
+	/*desejamos buscar no pacote br.com.alura.loja, tudo que tem aí dentro, quero que você busque como JAX-	RS e utilize como serviço:*/        
+	ResourceConfig config = new ResourceConfig().packages("br.com.alura.loja");
+        URI uri = URI.create("http://localhost:8080/");
+        HttpServer server = GrizzlyHttpServerFactory.createHttpServer(uri, config);
+        System.out.println("Servidor rodando");
+        System.in.read();
+        server.stop();
+    }
+
+a primeira das características que vimos é a Addressability, que todo recurso (por exemplo um carrinho) tem um endereço de identificação, uma URI, se eu entregar essa URI para o João ou para a Maria, ambos tem acesso ao mesmo carrinho. A URI identifica o recurso, e não o usuário que identifica o carrinho que está sendo acessado. Com o REST usamos a URI para identificar o recurso.
+
+A segunda característica importante é que o XML ou qualquer outro dado sendo jogado de um lado para o outro não é o carrinho, não é o recurso, mas sim uma representação de nosso recurso.
+
+---------------------------------------------------
+Passando parametros
+
+no metodo de serviço
+
+@Path("carrinhos")
+public class CarrinhoResource {
+	
+	@GET
+	@Produces(MediaType.APPLICATION_XML)
+	public String busca(@QueryParam("id") long id){
+		Carrinho carrinho = new CarrinhoDAO().busca(1l);
+		return carrinho.toXml();
+	}
+}
+
+e a URL de acesso seria http://localhost:8080/carrinhos?id=1
+
+Mas ainda está estranho, passar o parâmetro diretamente na URL, pois iremos perder a capacidade de usar o cache, já que o navegador não utiliza cache em urls com parâmetro.
+
+Seria melhor se fizessemos com que a uri tivesse o id do carrinho diretamente nela, ficando do seguinte modo http://localhost:8080/carrinhos/1,Para que isto ocorra, vamos alterar o nosso método busca, no CarrinhoResource e adicionar uma anotação, @Path, ela irá indicar que iremos receber o id através da uri, e ainda temos mais uma alteração, precisamos avisar que o id não é mais um QueryParam, agora ele é um PathParam, ficando assim:
+
+@Path("carrinhos")
+public class CarrinhoResource {
+	
+	@Path("{id}")
+	@GET
+	@Produces(MediaType.APPLICATION_XML)
+	public String busca(@PathParam("id") long id){
+		Carrinho carrinho = new CarrinhoDAO().busca(1l);
+		return carrinho.toXml();
+	}
+}
+
+------------------------------------------------------
+
+Podemos ao inves de retornar um xml retonar um json
+
+	@Path("{id}")
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	public String busca(@PathParam("id") long id){
+		Carrinho carrinho = new CarrinhoDAO().busca(1l);
+		return carrinho.toJson();
+	}
+
+e criamos no nosso carrinho o metodo toJson:
+    public String toJson() {
+        //vou usar a biblioteca gson do Java:
+	return new Gson().toJson(this);
+    }
+
+Mais para a frente veremos como suportar dois formatos ao mesmo tempo
+
+--------------------------------------------------------------------------
+
+USANDO POST
+//Anotamos o metodo como @POST
+    @POST
+    @Produces(MediaType.APPLICATION_XML)
+    public String adiciona(String conteudo) {
+        Carrinho carrinho = (Carrinho) new XStream().fromXML(conteudo);
+        new CarrinhoDAO().adiciona(carrinho);
+        return "<status>sucesso</status>";
+    }
+
+Iremos receber o xml que sera passado via post(teoricamente sera um xml passivel de serialização para a classe carrinho) e depois adicionamos via DAO e retornamos um xml para notificar
+
+Para efetuar a chamada post podemos utilizar o CURL
+
+O curl é o grande amigo de APIs HTTP Rest para fazermos testes manuais.
+
+Podemos fazer os testes via java tambem usanto o Entity do próprio Jax-rs
+
+	Carrinho carrinho = new Carrinho();
+        carrinho.adiciona(new Produto(314L, "Tablet", 999, 1));
+        carrinho.setRua("Rua Vergueiro");
+        carrinho.setCidade("Sao Paulo");
+        String xml = carrinho.toXML();
+	
+  	Entity<String> entity = Entity.entity(xml, MediaType.APPLICATION_XML);
+
+        Response response = target.path("/carrinhos").request().post(entity);
+        Assert.assertEquals("<status>sucesso</status>", response.readEntity(String.class));
+
+	//A Entity é utilizada para representar o que será enviado.
+
+Usando o CURL para efetura a chamada post
+
+curl -d "<br.com.alura.loja.modelo.Carrinho>  <produtos>    <br.com.alura.loja.modelo.Produto>      <preco>4000.0</preco>      <id>6237</id>      <nome>Videogame 4</nome>      <quantidade>1</quantidade>    </br.com.alura.loja.modelo.Produto>  </produtos>  <rua>Rua Vergueiro 3185, 8 andar</rua>  <cidade>São Paulo</cidade>  <id>1</id></br.com.alura.loja.modelo.Carrinho>" http://localhost:8080/carrinhos
+
+-------------------------------------------------------------------------------
+
+O protocolo HTTP por baixo dos panos
+
+o curl permite uma opção, a -v, que diz que queremos saber o que o cliente está enviando para o servidor e o que o servidor está devolvendo para o cliente: ele mostra tudo o que está sendo comunicado entre um lado e o outro, ele aumenta o nível de verbosidade do nosso código. Executamos então
+
+curl -v http://localhost:8080/carrinhos/1
+
+e temos toda a nossa comunicação entre cliente e servidor:
+
+-------------------------------------------------------------------------------
+
+Status Code
+
+Ao inves de retornarmos um xml com uma resposta qualquer vamos retornar um status code do proprio http,por exemplo se eu criei um recurso no servidor eu tenho que retornar um status 201, fazendo isso eu sei que quem consumir minha aplicação vai entender essar interface uniforme , pois é padrão do http 
+
+	@POST
+	@Consumes(MediaType.APPLICATION_XML)
+	public Response adiciona(String conteudo) throws URISyntaxException{
+		Projeto projeto = (Projeto) new XStream().fromXML(conteudo);
+		new ProjetoDAO().adiciona(projeto);
+		URI location = new URI("/projetos/" + projeto.getId());
+		return Response.created(location).build();
+	}
+	-->Aqui eu estou retornando um response e usando o metodo create(indica que foi criado um recurso e passo a URI do recurso http para o cara), estou usando tambem agora a anotação @Consumes(MediaType.APPLICATION_XML) ao inves da @Produces(MediaType.APPLICATION_XML) , informando que eu consumo um xml e caso o cliente mande algo direferente de xml, ira retornar um erro http 415 para o client informando que  o media type utilizado para o envio (application/x-www-form-urlencoded) não é suportado pelo nosso servidor
+
+e agora eu testo o retorno do codigo http
+	/*codigo omitido*/
+
+        Entity<String> entity = Entity.entity(xml, MediaType.APPLICATION_XML);
+        Response response = target.path("/carrinhos").request().post(entity);
+        
+        assertEquals(201, response.getStatus());
+
+------------------------------------------------------------------------------------
+INDEPOTENCIA(PODE SER FEITA DIVERSAS VEZES SEM ALTERAR O SERVIDOR)
+
+GET: RECEBE A REPRESENTAÇÃO , NÃO ALTERA O SERVIDOR(ela é indepotente)
+
+POST: Envia a representação , Corre o risco de criar dois carrinhos(Cria novo recurso , não é indepotente)
+
+------------------------------------------------------------------------------------
+
+Removendo um recurso
+
+O videogame tem o id 6237 dentro do carrinho 1. Como quero remover somente este produto, preciso de uma URI que identifique somente este produto dentro deste carrinho. Se o carrinho está na URI /carrinhos/1, que tal usarmos a URI /carrinhos/1/produtos/6237?
+
+É comum chamarmos isso de subrecurso, como se fosse um subrecurso dentro de outro
+
+Para deletarmos usamos o DELETE do http
+
+    // --> /carrinhos/1/produtos/6237
+    @Path("{id}/produtos/{produtoId}")
+    @DELETE
+    public Response removeProduto(@PathParam("id") long id, @PathParam("produtoId") long produtoId) {
+	Carrinho carrinho = new CarrinhoDAO().busca(id);
+        carrinho.remove(produtoId);
+        return Response.ok().build();   
+    }
+
+O metodo DELETE É INDEPOTENTE?
+	R:Sim, ele é, imagine que removemos o produto 15:
+		curl -X 'DELETE' http://localhost:8080/carrinhos/12312/produtos/15
+	  Se eu executar 1 ou mais vezes a mesma requisição, não haverá um efeito colateral fora a remoção do 	  produto 15 que estava no meu carrinho.
+
+---------------------------------------------------------------------------
+
+Imprimindo LOG do que meu cliente esta enviando para o servidor
+
+eu posso ver o que é que o meu cliente JAX-RS está enviando para o servidor e o que é que o servidor está devolvendo para o meu cliente configurando o meu cliente.
+
+-------------------------------------------------------------------------
+Atualizando recurso com PUT(Não vou usar o POST pq o post é melhor utilizado para criar recurso)
+
+
+Vou no meu servidor e crio um método que é acessado via PUT para a mesma URI do produto, recebendo os parâmetros que indicam o carrinho, o produto e o conteúdo XML:
+
+    @Path("{id}/produtos/{produtoId}")
+    @PUT
+    @Consumes(MediaType.APPLICATION_XML)
+    public Response alteraProduto(@PathParam("id") long id, @PathParam("produtoId") long produtoId, String conteudo) {
+        return Response.ok().build();
+    }
+
+
+
+Mas claro que temos um problema aqui, o cliente, o usuário final pode alterar o preço do produto na hora de enviar a representação do produto, isso pois ele é obrigado pela definição do PUT a enviar toda a representação, ele deve enviar o preço e tudo mais. Não podemos falar no PUT para enviar somente a quantidade e o ID, isso quebra o protocolo HTTP.
+
+Então o que quero fazer agora é substituir somente um pedaço do meu recurso, não todo o recurso. Poderia criar então um recurso que representa somente a quantidade de um produto dentro de um carrinho. Ao invés de utilizar a URI /carrinhos/{id}/produtos/{produtoId} para atualizar o produto inteiro dentro de um carrinho, crio uma URI /carrinhos/{id}/produtos/{produtoId}/quantidade
+
+
+@Path("{id}/produtos/{produtoId}/quantidade")
+    @PUT
+    @Consumes(MediaType.APPLICATION_XML)
+    public Response alteraProduto(@PathParam("id") long id, @PathParam("produtoId") long produtoId, String conteudo) {
+        Carrinho carrinho = new CarrinhoDAO().busca(id);
+        Produto produto = (Produto) new XStream().fromXML(conteudo);
+        carrinho.trocaQuantidade(produto);
+        return Response.ok().build();
+    }
+-->Agora seguimos o PUT ao pé da letra
+
+
+PUT é indepotente?
+	R:O verbo PUT é idempotente. Toda vez que executado, o resultado é o mesmo: a alteração do recurso (seja ele qual for) anterior pelo recurso atual, através da representação passada pelo cliente.
+
+GET para trazer informações
+POST para criar um recurso
+DELETE para apagar
+PUT troca o recurso por um outro recurso
+
+--------------------------------------------------------------------------------
+
+A vantagem de usar a INTERFACE UNIFORME
+
+Além dos verbos GET, POST, PUT, DELETE, além destes métodos HTTP, existem outros? Sim, existem diversos outros.
+Existe o PATCH, que serve para atualizar um pedaço de um recurso. Repara como esse cara pode ser importante para a gente também.
+
+Existe o OPTIONS, que serve para dizer quais são os verbos, quais são os métodos HTTP que esse recurso suporta. E existem outros, como TRACE, o CONNECT e o HEAD, que serve só para trazer as informações do cabeçalho, só os cabeçalhos de um GET, sem o corpo dele.
+
+A vantagem de usar uma interface uniforme é esse padrão que faz com que todas as aplicações, todos os programas utilizando essa API, tenham em comum essas características, todas elas sabem entender o que uma requisição HTTP está fazendo. Por quê? Porque se eu sou um cara aqui no meio que recebe uma requisição que vai para o meu servidor, e nessa requisição eu sei que ela é do tipo GET, eu mando ela para o meu servidor. Se esse cara aqui no meio percebe que deu algum problema entre a comunicação entre eu, que sou um router, um cache ou alguma coisa do gênero e o servidor, eu sei que eu posso tentar de novo. Por quê que eu posso tentar de novo? Porque é um GET. Porque você usou uma interface uniforme. Todo mundo aqui sabe que o GET pode ser repetido. Ele tenta de novo.
+
+Todo mundo aqui sabe que o POST não pode ser tentado de novo, e aí ele não tenta de novo. Todo mundo aqui sabe essas características, então ele sabe o que ele pode fazer e o que ele não pode fazer com essa requisição.
+
+Essa é a interface uniforme. A interface uniforme no HTTP é composta por diversas características. No REST, a importância da interface uniforme é essa, são duas: para o desenvolvedor é entender onde estão essas informações, e para a aplicação é que vários tipos de aplicação conseguem entender o que a requisição e o que a resposta está dizendo.
+
+VANTAGEM RESUMIDA:
+A vantagem de usar uma interface uniforme é esse padrão que faz com que todas as aplicações, todos os programas utilizando essa API, tenham em comum essas características, todas elas sabem entender o que uma requisição HTTP está fazendo.
+
+PARA QUE SERVE O METODO PATH DO HTTP:
+O PATCH serve para atualizar um pedaço de um recurso.
+
+-----------------------------------------------------------------------------------------------
+Deploy War
+
+Podemos zipar direto o conteudo da pasta webContent(no projeto é a webApp) e depois renomear a extenção para war ou podemos utilizar o utilitario do eclipse para gerar war, depois basta colocar o war na pasta webapps do tomcat e dar play
+----------------------------------------------------------------------------------------------------------------
+
+USANDO JAXB
+
+JAXB é o conversor padrão do JAX-RS
+
+PARA VER OS EXEMPLOS OLHAR O WorkSpace_EstudoAlura_REST
+
+-------------------------------------------------------------------------------------------------------
+
+criação de uma combobox através da diretiva ng-options
+	
+            <select 
+                    ng-model="foto.grupo"
+                    ng-controller="GruposController"
+                    ng-options="grupo._id as grupo.nome for grupo in grupos">
+                <option value="">Escolha um grupo</option>
+            </selct>
+A diretiva ng-options possui comportamento parecido com ng-repeat, porém a sintaxe "grupo._id as grupo.nome" indica que o valor do elemento será o ID do grupo e o que será exibido para seleção será seu título. O restante "for grupo in grupos" percorrerá a lista de grupos disponibilizada no escopo do controller, construindo cada item de nossa lista.
+
+colocando um valor em caixa alto no angular
+{{frase}} --> {{frase | uppercase}} (Mas cuidado: os filtros não funcionam com a diretiva ng-model)
+
+
+--ESTE CODIGO NÃO FUNCIONA
+
+<button class="btn btn-danger btn-block" ng-click="acao()">{{nome}}</button>
+Criar diretiva não é novidade para nós. Segue o código da diretiva meu-botao-perigo:
+
+angular.module('minhasDiretivas', [])
+    .directive('meuPainel', function() {
+        // código omitido
+    })
+    .directive('minhaFoto', function() {
+        // código omitido
+    })
+    .directive('meuBotaoPerigo', function() {
+        var ddo = {};
+        ddo.restrict = "E";
+        ddo.scope = {
+            nome: '@',
+            acao : '@'
+        }
+        ddo.template = '<button class="btn btn-danger btn-block" ng-click="acao()">{{nome}}</button>';
+        return ddo;
+    });
+
+--TEMOS O ATRIBUTO acao E ELE ESTA RECEBENDO UM @ MAS O @ COPIA O VALOR PASSADO COMO STRING , E NOS QUEREMOS PASSAR NA VERDADE UM COMANDO A SER EXECUTADO, PARA QUE ISSO SEJA POSSIVEL TEMOS QUE TROCAR O @ POR &

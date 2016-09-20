@@ -1,0 +1,178 @@
+O maven serve tanto para gerenciar o build do projeto quanto suas dependencias
+
+ADICIONANDO UMA DEPENDENCIA NO MAVEN(XTREAM)
+
+	Temos que alterar o pom.xml
+
+	<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+		<modelVersion>4.0.0</modelVersion>
+		<groupId>br.com.alura.maven</groupId>
+		<artifactId>produtos</artifactId>
+		<packaging>jar</packaging>
+		<version>1.0-SNAPSHOT</version>
+		<name>produtos</name>
+		<url>http://maven.apache.org</url>
+		<dependencies>
+			<!-- dependência do junit -->
+			//E AQUI TEMOS A DEPENDENCIA DO XTREAM ADICIONADA
+			<dependency>
+				<groupId>com.thoughtworks.xstream</groupId>
+				<artifactId>xstream</artifactId>
+				<version>1.4.9</version>
+			</dependency>
+		</dependencies>
+	</project>
+
+Obs:o site  http://mvnrepository.com/ tem uma grande gama de libs e suas respectivas tags de dependencia para serem colocadas no pom.xml
+
+------------------------------------------------------------------------------------------------
+MVN -o (algum comando) -->indica que vou trabalhar de forma offline
+	.O Maven quando eu executo , ele sempre verifica se a atualização das dependencias que eu informei, e isso pode ficar meio lento
+	 , então quando indico para trabalhar offline ele ira trabalhar com o que tem, sem verificar na internet atualização das dependencias,
+	  porem se tiver faltando libs no meu projeto, ele tambem não ira baixar
+
+O maven possui um repositorio remoto no qual ele vai baixar as dependencias que solicitamos, e ele tambem tem um repositorio local onde ele compartilha com as aplicações maven,
+então se eu tenho um projeto que baixou as dependencias do hibernate, quando eu criar um novo projeto que precise do hibernate , o maven ira olhar neste repositorio local primeiro, se ja
+tiver a dependencia solicitada, ele não ira baixar a mesma denovo
+
+o maven tem o repositorio default(não lembro agora a uri), mas eu posso atraves do pom.xml configurar outros repositorios*****dar uma olhada na documentação do maven
+
+--------------------------------------------------------------------------------------
+
+Neste capítulo vimos que o ciclo de vida do build de um projeto é composto por fases, e que quando utilizamos Maven, executar uma determinada fase requer a execução de fases anteriores.
+
+Podemos utilizar o comando mvn package para gerar o pacote do nosso projeto, como um JAR ou WAR. A fase package faz parte do que chamamos de ciclo de vida default. Existem outros ciclos de vida, como por exemplo o site, que trata da criação do site da documentação do nosso projeto.
+
+Qual das alternativas contém, na ordem, as fases que serão executadas por padrão antes da fase package?
+	R:Antes da fase package ser executada para gerar o pacote da nossa aplicação, serão executadas as seguintes fases:
+	  .validate: valida se todas as informações necessárias estão disponíveis
+	  .compile: compila o código-fonte
+	  .test: executa os testes de unidade
+	  
+	  Após executar as fases acima, com o projeto compilado e testado, a fase de package é executada, gerando o pacote no formato que desejamos distribuir o projeto, que no nosso caso, é um JAR.
+
+	  
+	  
+O PMD é um analisador de código-fonte que consegue encontrar algumas falhas no nosso código, como por exemplo, variáveis que não estão sendo utilizadas.
+
+mvn pmd:pmd -->executa o plugin PMD(caso exista inconsistencias ira ser criado o arquivo pmd.html no target/site/)
+
+------------------------------------------------------------------------------------------------------
+Usando o plugin do jetty para startar o projeto web
+	-->Configurando no pom.xml
+	
+	<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+		/*Omitido*/
+		<build>
+			<finalName>lojaweb</finalName>
+			<plugins>
+				<plugin>
+					<groupId>org.eclipse.jetty</groupId>
+					<artifactId>jetty-maven-plugin</artifactId>
+					<version>9.3.7.v20160115</version>
+				</plugin>
+			</plugins>
+		</build>
+
+	</project>
+	
+	agora na linha de comando basta entrar na pasta do projeto e rodar mvn jetty:run , esperar estartar e acessar localhost:8080
+
+	
+Nesse momento, apesar de ser executado com sucesso no Jetty, o Eclipse está indicando que existe um erro no projeto, mais precisamente na página index.jsp. Por que isso ocorre? Como resolver?
+	R:O projeto funciona bem no Jetty pelo fato de que o servidor já possui uma implementação da API de Servlets e disponibiliza para o nosso arquivo war.
+	  Porém como o Eclipse não consegue encontrar a classe nesse momento, ele indica o erro. Para resolver isso, e inclusive sermos capazes de criar uma Servlet, adicione a API nas dependências do pom.xml:
+	  <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+			<!-- informações sobre o projeto  -->
+			<dependencies>
+				<!-- junit -->
+
+				<dependency>
+					<groupId>javax.servlet</groupId>
+					<artifactId>javax.servlet-api</artifactId>
+					<version>3.1.0</version>
+				</dependency>
+			</dependencies>
+			<!-- build -->
+		</project>
+		
+		
+Após adicionar a nova dependência, perceba que o erro não existe mais. Porém o nosso arquivo web.xml que você encontra em src/main/webapp/WEB-INF/index.jsp, está com as configurações da versão 2.3. Você pode encontrar conteúdo da versão 3.1 aqui: http://goo.gl/KNu4sj. Você pode substituir o conteúdo do arquivo web.xml pelo seguinte;
+	<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+			 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			 xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee 
+			 http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+			 version="3.1">
+	</web-app>
+
+
+configurando o jetty para atualizar de 10 em 10s
+
+	<build>
+		<finalName>lojaweb</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>9.3.7.v20160115</version>
+				//Aqui configuramos para atualizar de 10 em 10 segundos
+				<configuration>
+					<scanIntervalSeconds>10</scanIntervalSeconds>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+Ai caso eu altere algo na servlet por exemplo, basta esperar 10seg que ele ja atualiza, sem precisar ficar pausando o servidor e tals
+
+
+Configurando o contexto no jetty
+
+		<plugin>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-maven-plugin</artifactId>
+			<version>9.3.7.v20160115</version>
+			<configuration>
+				<scanIntervalSeconds>10</scanIntervalSeconds>
+				//Aqui configuramos o contexto
+				<webApp>
+		        	    <contextPath>/loja</contextPath>
+		        	</webApp>
+			</configuration>
+		</plugin>
+
+agora ao inves de acessar os recursos desse projeto atraves de localhost:8080 eu tenho que colocar localhost:8080/loja, essa configuração me permite ter varios projetos no mesmo servidor
+
+--------------------------
+
+O que significa quando declaramos uma dependência com o escopo provided?
+	R:Significa que a dependência estará disponível para compilar e testar as classes, mas que é esperado que o JDK ou o container disponibilize a depedência, e por esse motivo a biblioteca não é adicionada ao artefato final quando geramos o pacote do nosso projeto.
+		.Um exemplo disso é a nossa API de Servlet, declarada como dependência na lojaweb. O container(Jetty) irá disponibilizar a implementação dessa API, portanto não é necessário que a biblioteca esteja disponível junto com war da projeto.
+
+O que significa quando declaramos uma dependência com o escopo runtime?
+	R:Significa que a dependência não estará disponível para compilar. Estará disponível apenas no momento da execução e também no classpath dos testes.
+	
+O que significa quando declaramos uma dependência com o escopo compile?
+	R:Significa que a dependência estará em todos os classpaths: de copilação de teste e execução. Esse é o escopo padrão utilizado quando não declaramos um escopo na depedendência.
+	
+Adicione o projeto produtos como dependência para o projeto lojaweb. Nesse momento temos acesso as classes do projeto produto a partir do Eclipse, mas se executarmos o jetty:run, por exemplo, receberemos um erro. Por que isso ocorre e como resolver?
+	R:Isso ocorre porque o artefato não está instalado localmente e não pode ser encontrado nos repositórios remotos. O Eclipse reconhece como um projeto aberto, por isso funciona na IDE. Para resolver o problema devemos executar o comando mvn install no projeto produtos, que instalará o artefato no repositório local do maven.
+
+
+EXCLUIR DEPENDENCIAS
+
+Para excluir uma dependência que foi incluída em algum projeto que utilizamos, basta utilizar a tag exclusion:
+	 <dependency>
+		<groupId>br.com.alura.maven</groupId>
+		<artifactId>produtos</artifactId>
+		<version>1.0-SNAPSHOT</version>
+		<exclusions>
+			<exclusion>
+				<groupId>com.thoughtworks.xstream</groupId>
+				<artifactId>xstream</artifactId>
+			</exclusion>
+		</exclusions>
+	</dependency>

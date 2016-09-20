@@ -1,0 +1,97 @@
+Padrão Factory ->Centralizar o processo de criação de um objeto
+
+Quando precisamos isolar o processo de criação de um objeto, para facilitar a troca dele no futuro, levamos o processo de instanciação dessa classe para uma Factory.
+
+Factory e Builder são dois padrões de projetos conhecidos como criacionais(pois eles lidam com problemas de criação de objetos)
+
+Factories e Builders são classes cuja responsabilidade é lidar com o processo de criação de objetos complexos. Faça uso de Factories sempre que a criação de um objeto possa mudar em algum momento.
+
+Temos o costume de usar o sufixo Factory nas nossas classes que são fábricas.
+O prefixo get também é bastante usado.
+
+Geralmente usamos um builder quando precisamos passar diversas informações para a lógica que monta o objeto. No caso da Nota Fiscal, passamos nome, ítens, etc.
+
+Usamos uma fábrica quando temos que isolar o processo de criação de um objeto em um único lugar. Essa fábrica pode descobrir como criar o objeto dentro dela própria, mas geralmente ela não precisa de muitas informações para criar o objeto.
+
+-----------------------------------------------------------------
+Flyweight
+
+Sempre que temos uma quantidade grande de objetos similares a serem instanciados, uma boa solução é fazer cache dessas instâncias e reutilizá-la. Para isso, a implementação é geralmenta fazer uso de uma fábrica, que controla as instâncias. Esse padrão é conhecido por flyweight.
+
+-->Tenho esta classe que retorna um objeto representando uma nota musical-->caso eu precise da mesma nota musical n vezes ele vai retornar a mesma instancia que ja esta carregada(cacheada)
+
+public class NotasMusicais {
+
+    private static Map<String, Nota> notas = 
+        new HashMap<String, Nota>();
+
+    static {
+
+        notas.put("do", new Do());
+        notas.put("re", new Re());
+        notas.put("mi", new Mi());
+        notas.put("fa", new Fa());
+        notas.put("sol", new Sol());
+        notas.put("la", new La());
+        notas.put("si", new Si());
+
+    }
+    public Nota pega(String nome) {
+        return notas.get(nome);
+    }
+}
+
+Uma Factory instancia uma classe que é importante/complexa, e seu processo de criação deve ser isolado.
+Um Flyweight serve para quando temos muitas instâncias do mesmo objeto andando pelo sistema, e precisamos economizar. Para tal, o Flyweight faz uso de uma fábrica modificada, que guarda essas instâncias.
+
+SingleTon vs flyweight
+
+A ideia de ambos é garantir que existam apenas uma única referência para o objeto ao longo do programa.
+A diferença é que o Flyweight garante que existam apenas uma única instância de vários elementos. É um "singleton maior".
+
+------------------------------------------------------------------
+
+Memento ->quando preciso salvar os estados de um objeto,e poder navegar por este estado podendo pegar estados anteriores eu utilizo este pattern(O Memento é um padrão de projeto que nos ajuda a salvar e restaurar estados de objetos.)
+
+Um possível problema é a quantidade de memória que ele pode ocupar, afinal estamos guardando muitas instâncias de objetos que podem ser pesados.
+Por isso, dependendo do tamanho dos seus objetos, a classe Estado pode passar a guardar não o objeto todo, mas sim somente as propriedades que mais fazem sentido.
+
+------------------------------------------------------------------
+
+Interpreter --> Quando eu tenho uma arvore onde cada no tem que saber se resolver eu utilizo o padrão interpreter(fica melhor exemplificado com o projeto que fiz)**********ESTUDAR DSLs
+
+---------------------------------------------------------------------
+
+Visitor -> navegar em uma arvore para fazer algo(seja para imprimir informações ou criar outros objetos)
+
+-------------------------------------------------------------------------------------------------
+
+Adapter -->Quando temos um conjunto de classes legadas, que achamos que seu uso vai sujar o novo sistema,criamos um "adaptador" que facilita sua utilização.
+
+bridge -> interface "ponte" para a implementação concreta. O nome desse padrão de projeto é justamente esse: bridge.
+
+Esses dois patterns tem implementações iguais porem um significado semantico diferente(cada uma foi criado para resolver problemas diferentes)
+
+Em termos de implementação, nenhuma. Em ambas, criamos uma interface e criamos uma implementação por baixo.
+A diferença é semântica. A ideia da Bridge é justamente ser uma ponte em dois mundos/sistemas. A ideia do Adapter é esconder alguma "sujeira", ou adaptar algo que é diferente e não bate com o sistema atual.
+
+-----------------------------------------------------------------
+
+Command ->Encapsula comando a ser executado no futuro
+
+O nome desse padrão de projeto, que facilita a criação de comandos, chama-se Command. Usamos ele quando temos que separar os comandos que serão executados do objeto que ele pertence. Um bom exemplo disso é o uso de filas de trabalho.
+
+COMMAND X STRATEGY
+	A ideia do Command é abstrair um comando que deve ser executado, pois não é possível executá-lo naquele momento (pois precisamos por em uma fila ou coisa do tipo).
+
+	Já no Strategy, a ideia é que você tenha uma estratégia (um algoritmo) para resolver um problema.
+
+----------------------------------------------------
+
+Facade e singleton
+
+singleton -> Ele faz com que só exista uma única instância da classe em todo o sistema!
+
+facade ->Esse padrão de projeto, que provê uma "fachada" para os serviços disponibilizados pelos sub-sistemas, é conhecido pelo nome de Façade.
+
+Obs:Quando usar facade considerar transformala em um singleton(pois é uma classe que so delega para outras classes e geralmente não possui estado e tals)

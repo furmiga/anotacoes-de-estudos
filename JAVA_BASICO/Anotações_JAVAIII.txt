@@ -1,0 +1,60 @@
+--Executar um jar
+	java -jar nomeDoPrograma.jar
+
+--Gerar Javadoc
+	Project -> Generate javadoc
+		ou
+	ctrl + 3 e escreva javaDoc
+
+--Todas as classes do pacote java.lang são importadas de forma automatica
+
+--A classe Runtime A classe Runtime possui um método para fazer uma chamada ao sistema operacional e rodar algum   programa:
+	Runtime rt = Runtime.getRuntime();
+    	Process p = rt.exec("dir");
+
+--java.math.BigDecimal -->Quando tiver valores que precisam de extrema precisão
+
+--a classe StringBuilder tem um metodo chamado reverse(para inverter uma String)
+
+--Convertendo uma String em inteiro sem usar as bicliotecas
+		
+	String val = "3";
+	int i = val.charAt(0) - '0';
+		OU
+	Character.getNumericValue(val.charAt(0))
+
+--quando eu dou um close no bufferedReader ele ja fecha todas as outras dependencia de inputStreamReader e   inputStream
+
+--Interando em uma lista com iterator
+   Iterator<String> i = conjunto.iterator();
+      while (i.hasNext()) {
+          // recebe a palavra
+          String palavra = i.next();
+          System.out.println(palavra);
+      }
+
+--Usando a coleção propertir
+    Properties config = new Properties();
+
+    config.setProperty("database.login", "scott");
+    config.setProperty("database.password", "tiger");
+    config.setProperty("database.url","jdbc:mysql:/localhost/teste");
+
+    // muitas linhas depois...
+
+    String login = config.getProperty("database.login");
+    String password = config.getProperty("database.password");
+    String url = config.getProperty("database.url");
+    DriverManager.getConnection(url, login, password);
+
+--Metodos da classe Collections
+	.reverse(List<?> list) - Inverte a ordem dos elementos em uma lista específica.
+	.rotate(List<?> list, int distance) - Rotaciona os elementos de uma lista específica a uma distância específica.
+	.shuffle(List<?> list) - Troca aleatoriamente a lista específica usando um código padrão de aleatoriedade.
+
+--Random random = new Random();
+  random.nextInt(2000)
+
+--Os hash são mais rapidos que as listas em pesquisas mas em inserção as listas são mais rapidas
+No caso das listas (ArrayList e LinkedList), a inserção é bem rápida e a busca muito lenta!
+No caso dos conjuntos (TreeSet e HashSet), a inserção ainda é rápida, embora um pouco mais lenta do que a das listas. E a busca é muito rápida!

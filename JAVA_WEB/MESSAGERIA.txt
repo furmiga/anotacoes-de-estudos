@@ -1,0 +1,76 @@
+O ActiveMQ não é um servidor de aplicação e sim um Message Broker.
+
+Já ouviu falar dos os 4 Estilos de Integração? 
+	Os 4 estilos são:
+	.Mensageria
+	.RPC
+	.Banco de dados compartilhado
+	.Troca de arquivos
+
+----------------------------------------------
+Existem outros mom's alem do activeMQ, como o HornetQ, apollo etc, então para reaproveitar o codigo o java fez uma especificação para messageria chama JMS, logo nosso codigo que roda no activeMQ pode ser reutilizado com o hornetQ por exemplo
+
+O que é um destination?
+	R:O ActiveMQ ou MOM em geral pode ter vários consumidores e receber mensagens de vários clientes. Para organizar o recebimento e a entrega das mensagens criamos destinos (ou Destination) no MOM. A nossa fila.financeiro é um Destination, ou seja, o lugar concreto onde a mensagem será salvo temporariamente.
+	No mundo JMS um destination é representado pela interface javax.jms.Destinaton e fizemos um lookup para pegá-lo:
+
+	Destination fila = (Destination) context.lookup("fila.financeiro");
+
+Como é criada a nossa ConnectionFactory?
+	R:ConnectionFactory factory = (ConnectionFactory)context.lookup("ConnectionFactory");
+	  
+	  O lookup é feito através da classe InitialContext que por sua vez se baseia no arquivo de configuração jndi.properties:
+
+		java.naming.factory.initial = org.apache.activemq.jndi.ActiveMQInitialContextFactory
+		java.naming.provider.url = tcp://localhost:61616
+
+		#outras configurações do arquivo jndi.properties omitidas
+		
+Qual é a responsabilidade da Session?
+	R:A Session no JMS abstrai o trabalho transacional e confirmação do recebimento da mensagem. Além disso, também serve para produzir o MessageConsumer! É um objeto todo poderoso que criamos a partir da conexão:
+		//Como colocamos false, não é preciso chamar session.commit() ou session.rollback()
+		//O Session.AUTO_ACKNOWLEDGE diz que queremos automaticamente (através da Session) confirmar o recebimento da mensagem JMS
+		Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+	
+Nosso objetivo nesse capítulo era receber uma mensagem JMS. Para tal precisamos usar um MessageConsumer. Qual é a ordem correta das classes envolvidas para construir um MessageConsumer?
+	R:Tudo começa com a ConnectionFactory que pegamos através do InitalContext. A fábrica cria a Connection que por sua vez instancia a Session. A Session é responsável por criar o 		MessageConsumer. Assim podemos desenhar:
+	ConnectionFactory -> Connection  -> Session -> MessageConsumer
+	
+Podemos passar um parâmetro ao método receive para definir é o tempo de espera (ou o tempo de timeout).
+	
+    public static void main(String[] args) throws Exception {
+        InitialContext ctx = new InitialContext();
+        QueueConnectionFactory cf = (QueueConnectionFactory)ctx.lookup("ConnectionFactory");
+        QueueConnection conexao = cf.createQueueConnection();
+        conexao.start();
+
+        QueueSession sessao = conexao.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
+        Queue fila = (Queue) ctx.lookup("financeiro");
+        QueueReceiver receiver = (QueueReceiver) sessao.createReceiver(fila );
+
+        Message message = receiver.receive();
+        System.out.println(message);
+
+        new Scanner(System.in).nextLine();
+
+        sessao.close();
+        conexao.close();    
+        ctx.close();
+    }
+
+	
+Vimos no video que é possível subir o ActiveMQ a partir de uma aplicação Java.
+Para isso basta alterar o arquivo jndi.properties:
+
+#java.naming.provider.url = tcp://hostname:61616
+java.naming.provider.url = vm://localhost
+
+Subimos o ActiveMQ junto com nossa aplicação.
+Isso pode ser útil quando queremos ter as vantagens do MOM dentro de uma aplicação web, por exemplo, sem precisar manter uma instância separada do ActiveMQ.
+
+ESTUDAR UM POUCO DE JMS 2.0---> http://blog.caelum.com.br/a-nova-api-do-jms-2-0-no-java-ee-7/ **************
+
+O JMS segue o mesmo padrão de projeto Observer! A diferença é que JMS é remoto ou distribuído. Ou seja, no padrão Observer originalmente descrito no livro GOF, tudo acontece na memória, o Observer desacopla objetos. Com JMS, a comunicação entre Producer e Consumer é remota, desacoplamento arquitetural.
+Para fazer a comparação com o exemplo apresentado na pergunta: O botão seria um produtor de mensagem (ainda não criamos um produtor pelo JMS, apenas usamos o console de administração, isso vem no próximo capítulo). O ActionListener representa o MessageListener do mundo JMS e o ActionEvent seria a Message. Faz sentido?
+
+Um exemplo de Observer em Java é o ActionListener da API Swing.

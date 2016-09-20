@@ -1,0 +1,7 @@
+ctrl + F11 -> executa o main
+
+alt + shift + x j -> executga o projeto como java application
+
+f3 ->em cima de algum metodo ou contrutor , ele ira ate a definição do mesmo
+
+ctrl + f6 -> permite tambem que eu navegue sobre as abas

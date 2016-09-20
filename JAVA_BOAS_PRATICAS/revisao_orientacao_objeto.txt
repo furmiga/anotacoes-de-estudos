@@ -1,0 +1,104 @@
+Unir dados com comportamento deixamos de ter classes anemicas
+
+É muito comum criarmos classes com getters e setters para todos os atributos, mas não é uma boa prática.
+
+Lembra o Tell, Don't Ask? Ele diz que você nunca deve perguntar para depois tomar uma decisão, mas sim mandar a classe fazer algo.(SO LEMBRETE MESMO)
+
+Seguindo o "Tell, Don't Ask", encapsulamos melhor nossas regras de negócio!
+Quando perguntamos ao objeto para depois tomar uma decisão, geralmente acabamos por espalhar nossas regras de negócio ao longo do código. Seguindo o "Tell, Don't Ask", acabamos por colocar as regras de negócio nos seus devidos lugares.
+
+No fim, a regra diz que você deve sempre encapsular os comportamentos nas classes devidas! Nunca deixe o encapsulamento da sua classe vazar! Isso pode lhe trazer problemas no futuro!
+
+------------------------------------------------------------------------------
+
+COESAO
+
+MUITAS RESPONSABILIDADES = DIFICIL MANUTENÇÃO
+
+ public class RelatorioDeVendas {
+       private void conectaAoBanco() {...}
+       private String geraRelatorio() {...}
+       public void salvaParaArquivo() {...}
+       public void imprime() {...}
+  }
+
+---agora vamor refatorar esta classe com muitas responsabilidades
+
+ class BancoDeDados {
+        void conecta() {...}
+      }
+
+ class Impressora {
+        void imprime(String texto) {...}
+      }
+
+ class SistemaDeArquivos {
+        void escreveNovoArquivo(String nomeDoArquivo, String texto) {...}
+      }
+
+ class RelatorioDeVendas {
+        void geraRelatorio() {
+          // gera o texto
+          // usa a classe SistemaDeArquivos para salvar
+          // usa a classe Impressora para imprimir
+        }
+      }
+
+
+Deixar nossas classes com responsabilidades bem definidas deixa nosso código mais fácil de reaproveitar e de manter. Conseguimos compor comportamentos mais facilmente e mudamos nossas classes menos frequentemente.
+
+Uma maneira de refatorar esse tipo de classe(não coesa) é pegar cada uma das responsabilidades e jogá-las em classes próprias. Depois, para juntar todas elas, podemos fazer uso de composição, por exemplo (igual fizemos com a classe Dívida, que agora contém um CNPJ).
+
+O ideal é criar os getters e setters somente quando necessário. Sempre que possível, devemos tentar encapsular a lógica que lida com os dados da nossa classe dentro dela mesma em vez de expor os dados para que as outras classes do sistema executem uma lógica em cima deles
+
+-----------------------------------------------------------------------------------------
+
+QUANDO NÃO USAR HERANÇA
+
+Herança resulta em um alto acoplamento entre a classe mãe e a classe filha
+
+A HERANÇA QUEBRA UM POUCO DO ENCAPSULAMENTO DA CLASSE MÃE
+
+Prefira composição sobre herança
+
+Herança é um recurso que deve ser usado com muito cuidado! Existem casos mesmo dentro da linguagem Java em que a herança foi mal utilizada, como na implementação da classe Stack, que estende Vector, ou da classe Properties, que estende Hashtable. Essas classes acabaram herdando métodos que não fazem sentido para elas e, para o desenvolvedor saber quais métodos ele pode ou não usar, ele precisa olhar na documentação da classe.
+
+Dando preferência a composição sobre herança, evitamos quebra de encapsulamento de nossas classes. Diminuímos o acoplamento entre nossas classes, evitando, assim, que uma mudança em uma única classe quebre várias partes de nosso sistema.
+
+Sempre que uma classe na hierarquia tem métodos indesejados, inúteis e/ou que não fazem sentido, existe uma possibilidade muito grande de a herança ter sido mal usada. Nestes casos, o ideal é substituir herança por composição.
+
+Mas lembre-se que, independente do uso correto ou incorreto da herança, o acoplamento que a herança traz entre a classe-pai e a classe-filho é sempre alto. Portanto, analise cada caso com cuidado.
+
+--------------------------------------------------------------------------
+
+LEI DE DEMETER
+	.não devemos fazer chamadas encadeadas de metodo
+	.por isso o conceito Tell, Don't Ask ou seja chama o metodo para realizar alguma coisa e não eu chamar o metodo e este metodo me retornar um objeto qualquer e ai eu chamar o metodo deste outro obeto(fazendo uma chamada encadeada de metodos)
+
+	.evite getter chamando getter chamando getter(isso viola a lei de demeter)
+
+O problema do acoplamento é que uma mudança na classe (como a mudança de uma assinatura de método) pode afetar todas as outras classes que a utilizam!
+
+O problema de você navegar a fundo em uma instância, como por exemplo a().b().c().d(); é que o código que faz uso disso agora, além de conhecer como A funciona, conhece como B funciona e como C funciona.
+
+Se alguma das classes A, B, ou C mudar, a chance dela quebrar é grande!
+
+Por isso pensar na Lei de Demeter pode ser interessante! Dessa forma, diminuímos o acoplamento e evitamos que a nossa classe quebre por culpa de outras.
+
+----------------------------------------------------------------------------------
+POLIMORFISMO
+
+Com o polimorfismo, deixamos nosso código mais desacoplado e, portanto, mais flexível e fácil de manter.
+
+Complexidade ciclomática
+	ela mede a quantidade de caminhos de execução independentes a partir de um código fonte.
+		ex:quanto mais ifs maior a complexidade ciclomatica
+
+-------------------------------------------------------------------------------------
+
+O programador pode sempre, após implementar duas classes "razoavelmente parecidas", parar por um instante, e ver se elas se encaixam em alguma "classe maior".
+
+CNPJ, CNH, RG? São documentos. ISS, INSS, ICMS? São impostos. Conta Corrente, Conta Poupança? São contas.
+
+E assim por diante. Sempre pense em abstrações!
+

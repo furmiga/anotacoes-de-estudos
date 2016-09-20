@@ -1,0 +1,88 @@
+COESAO
+
+Significa coesão , uma classe com uma unica responsabilidade
+
+quando você está escrevendo uma classe que não para de crescer nunca, esse é um indício de que ela não é coesa. Quando você tem uma classe com 40, 50, 60 métodos, pare e pense “Será que a minha classe, ela tem que ter mesmo 60 comportamentos diferentes? Será que eu não consigo separar isso em classes menores, mais coesas? 
+
+Classes coesas tendem a ser menores, e por consequência, mais fáceis de serem lidas e mantidas. Elas também tendem a ser mais reutilizáveis, afinal é mais fácil.
+
+Classes que não são coesas geralmente possuem muitos comportamentos (métodos). Além disso, elas também tem a tendência de crescer pra sempre, ou seja, o tempo inteiro o desenvolvedor tem que por a mão para escrever mais código.
+
+Então, encontrou uma classe com muita responsabilidade, divida-a em várias classes menores.
+
+
+-----------------------------------------------------
+ACOPLAMENTO
+
+Acoplar com classes estaveis
+
+programe voltado para interface
+
+Acoplamento eferente->quem eu dependo
+
+Acoplamente aferente ->Quem depende de min
+
+O acoplamento é ruim porque quando eu tenho uma classe que depende de outra classe, mudanças nas classes de que eu dependo podem afetar a classe principal. Isso é problemático. Eu preciso diminuir isso.
+
+Como eu faço isso? Eu tento me acoplar com classes, interfaces, módulos, que sejam estáveis. Um módulo estável é aquele que tenta mudar muito pouco. Ele tem alguma coisa ao redor dele que faz ele mudar muito pouco. E eu mostrei que, no caso da interface, o número de implementações embaixo, o número de pessoas usando aquela interface, são uma força contra mudança nela. 
+
+O problema do acoplamento é que, a partir do momento que uma classe A depende de uma classe B, qualquer mudança em B pode impactar A. Ou seja, quanto mais dependermos de outras classes, mais chances temos de uma mudança na dependência afetar a classe dependente.
+
+Classes estáveis são aquelas que geralmente já são dependidas por muitas outras classes do sistema. Um bom exemplo disso são interfaces, pois elas geralmente possuem muitas implementações, e aí isso faz com que o desenvolvedor pense melhor antes de sair mudando a interface.
+
+---------------------------------------------------------------------
+
+ABERTA PARA EXTENSÃO, FECHADA PARA MODIFICAÇÃO
+
+O OCP(ABERTA PARA EXTENSÃO, FECHADA PARA MODIFICAÇÃO) diz para escrevermos classes que sejam facilmente extensíveis (ou seja, abertas pra extensão). Dessa forma, mudar o comportamento da classe atual é fácil: basta passar outras implementações concretas das abstrações que ela depende.
+Classes abertas para extensão, mas fechadas para modificação, também são mais coesas.
+
+O DIP(inversão de dependencia) nos diz para sempre dependermos de módulos que sejam mais estáveis que o módulo corrente. Abstrações devem depender de abstrações, e implementação deve depender de abstração.
+Com isso, diminuímos o risco do acoplamento, afinal abstrações são estáveis, e tendem a não mudar frequentemente, diminuindo a propagação de problemas.
+
+-----------------------------------------------------------------
+Encapsulamento
+
+Diga e não pergunte(ou seja eu tenho que informar o que o objeto vai fazer e não perguntar)
+Ex: 
+-Quebra de encapsulamento(aqui estou perguntando para a nota fiscal o seu valor para sabr qual o juros que sera cobrado(mas essa regra de negocuio tem que ser encapsulada na propria classe NF))
+	NotaFiscal nf = new NotaFiscal();
+	double valor;
+	if(nf.getValorSemImposto()>1000){
+		valor = 0.6*nf.getValor();
+	}else{
+		valor = 0.12*nf.getValor();
+	}
+-Aqui ja esta bem encapsulada a rotina
+	NotaFiscal nf = new NotaFiscal();
+	double valor = nf.calcularValorImposto();
+
+Tenho que saber o que o método faz e não como ele faz
+
+sistema dificil de manter são aqueles que não pensam na propagação de mudanças 
+
+Lei de Demeter -->Evitar invocações em cadeia -->a.getB().getC().getD()...
+A Lei de Demeter, de maneira simples, diz para que você evite ao máximo fazer expressões como a.getB().getC().getD().acao(). O problema dessa cadeia, é que a classe que contém essa expressão, conhece muito sobre o comportamento da classe A, depois da classe B, até D. Se alguma delas mudar, a mudança será propagada para muitos lugares.
+Diminuir a quantidade de invocações como essas ajuda você a encapsular melhor o comportamento e o funcionamento interno das classes.
+
+
+Encapsular é esconder os detalhes da implementação dentro da classe. Dessa forma, as classes que farão uso dela, não saberão como ela funciona internamente
+
+você deverá o tempo todo se fazer a pergunta: "Consigo saber COMO a classe está implementando essa regra de negócio?". Se a resposta for sim, então aquele comportamento não está bem encapsulado.
+
+---------------------------------------------------------------
+
+Herança
+
+Substituição de liskov(significa que quando vc depende de abstrações não importa qual seja sua implementação o codigo ira funcionar sem problemas)
+
+	Classes filha numca podem ter as pré - condições mais restristas q as classes pais(so afroxar)
+
+	Ex: a classe pai tem um metodo que suporta receber numeros inteiros e ela faz um tratamento que so pode receber de 1 a 100, e a classe filha reescreve o metodo mudando essa validação para receber numeros de 1 a 50(NÃO PODEEEE)
+   
+	ja a pós condição não pode afroxar as condições da classe pai(o contrario da pré condição)
+ 
+Favoreça a composição ao inves da herança
+
+Porque é dificil fazer bom uso da herança?
+	Porque para se fazer bom uso de herança, o desenvolvedor deve pensar em cada método que a classe filha herdou e sobreescreveu, e lembrar que as pré-condições não podem ser apertadas, e as pós-condições não podem serem afrouxadas.

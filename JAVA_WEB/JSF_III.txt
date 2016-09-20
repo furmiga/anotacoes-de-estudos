@@ -1,0 +1,148 @@
+Configurando o CDI
+	->Apos baixar o jar de implementação do CDI(weld) , temos que:
+		.criar o arquivo beans.xml na pasta WEB-INF
+			<?xml version="1.0" encoding="UTF-8"?>
+			<beans>
+			</beans>
+		.precisamos configurar o arquivo context.xml que fica na pasta WebContent/META-INF
+			<Context>
+				<Resource name="BeanManager"
+					auth="Container"
+					type="javax.enterprise.inject.spi.BeanManager"
+					factory="org.jboss.weld.resources.ManagerObjectFactory"/>
+			</Context>
+			
+e nas classes mapeadas pelo jsf eu tenho que trocar onde era @managedBean para @named
+
+onde eu tenho @ViewScoped
+	.preciso trocar o pacote de importação para javax.faces.view.ViewScoped;
+	
+onde eu tenho @SessionScoped
+	.preciso trocar o pacote de importação para javax.enterprise.context.SessionScoped;
+
+para toda classe com o escopo maior que request é necessario que a classe implemente a interface serializable
+
+O correto é trocarmos nossos @ManagedBean por @Named, pois agora quem irá gerenciá-los é o CDI
+
+Lembrando também que o JSF continua fazendo um papel importante na aplicação. Todos os componentes no xhtml são criados pelo controlador JSF, apenas os beans ficam com CDI!
+
+
+-------------------------------------
+quando queremos que seja injetado um objeto que não é trivial de ser feito, ou é uma interface tambem, podemos usar o @produces
+	
+	@Produces//como o EntityManager é uma interface, temos que ensinar ao cdi como instanciar o mesmo
+	@RequestScoped //significa que sera criada uma instancia a cada requisição
+	public EntityManager getEntityManager() {
+		return emf.createEntityManager();
+	}
+	
+	//com esta anoracao @Disposes diz para o CDI como ele deve fechar os EntityManagers .
+	public void close(@Disposes EntityManager em) {
+		em.close();
+	}
+	
+	
+	public class AutorDao implements Serializable{
+
+		@Inject
+		EntityManager em;
+
+		private DAO<Autor> dao;
+
+		// Esse método também é chamado de Callback por usar a anotação @PostConstruct
+		//temos tambem o  @PreDestroy
+		@PostConstruct
+		void init() {
+			this.dao = new DAO<Autor>(this.em, Autor.class);
+		}
+
+		//outros métodos omitidos
+	}
+	Quando será chamado o método init?
+	
+	R:Logo após criação do objeto e injeção do EntityManager.
+	
+	O que acontece é que o CDI instancia o AutorDao usando o construtor padrão (1) (construtor sem argumentos), depois injeta o EntityManager (2), e depois chama o método com @PostConstruct(3). A injeção com CDI sempre segue esses 3 passos.
+
+	1) Chamando construtor padrão
+	2) Injeção
+	3) Chamando método com @PostConstruct
+	
+	O uso do @PostConstruct é opcional, ou seja, o terceiro passo é só executado quando existe um método com essa anotação.
+	
+---------------------------------------------
+
+criando interceptador com cdi
+
+esse interceptador que vamos fazer sera para abrir e fechar transações
+
+.vamos criar uma anotação @Transacional (lembrando que poderia ser qualquer nome)
+	
+	@InterceptorBinding
+	@Target({ ElementType.METHOD, ElementType.TYPE })
+	@Retention(RetentionPolicy.RUNTIME)
+	public @interface Transacional {
+
+	}
+	
+.vamor criar nossa classe que sera o interceptador
+	
+	@Transacional
+	@Interceptor
+	public Object  GerenciadorDeTransacao implements Serializable {
+
+		@Inject
+		EntityManager manager;
+
+		public void executaTX(InvocationContext contexto) {
+
+			manager.getTransaction().begin();
+
+			Object resultado = contexto.proceed();
+
+			manager.getTransaction().begin();
+			
+			return resultado;
+		}
+	}
+	
+Configuração do interceptador no beans.xml
+
+	<beans>
+		<interceptors>
+			<class>br.com.caelum.livraria.tx.GerenciadorDeTransacao</class>
+		</interceptors>
+	</beans>
+	
+Agora basta usarmos a anotação, no metodo que sera necessario abrir e fechar a transação
+
+	@Transacional
+	public void gravar() {
+		System.out.println("Gravando livro " + this.livro.getTitulo());
+
+		if (livro.getAutores().isEmpty()) {
+			FacesContext.getCurrentInstance().addMessage("autor",
+					new FacesMessage("Livro deve ter pelo menos um Autor."));
+			return;
+		}
+
+		if(this.livro.getId() == null) {
+			livroDao.adiciona(this.livro);
+			this.livros = livroDao.listaTodos();
+		} else {
+			livroDao.atualiza(this.livro);
+		}
+
+		this.livro = new Livro();
+	}
+	
+	//agora abre a transação executa o metodo gravar e fecha a transação
+
+
+	
+.qual é a responsabilidade dos EJBs dentro de uma aplicação JavaEE?
+	R:Inversão de Controle: Oferecendo vários serviços para a aplicação como Persistência, Transação, Segurança ou Remotabilidade
+
+Apesar do fato que o EJB inverte o controle e possui também uma forma de injeção de dependência, os EJBs vão muito além disso. Pensando apenas em IoC e DI temos o CDI como solução. Com EJB não é preciso criar um producer nem o gerenciador de transação, pois isso já vem pronto. No entanto, para usar EJB é preciso usar um servidor de aplicação como o JBoss Wildfly:
+
+https://s3.amazonaws.com/caelum-online-public/jsf-cdi/img/05/ejb.png

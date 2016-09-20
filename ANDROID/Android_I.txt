@@ -1,0 +1,3 @@
+No android toda tela é chamada de activity
+
+Quando se fala em View no Android está se fazendo uma referência ao que o usuário pode ver e as coisas com as quais ele interage.Por exemplo: um texto, um botão, uma imagem, etc.

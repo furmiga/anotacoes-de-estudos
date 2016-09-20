@@ -1,0 +1,120 @@
+Uma breve explicação do que é p2p
+
+Se já usou um Torrent, aproveitou um outro modelo de comunicação, o P2P ou Peer-To-Peer!
+O modelo Cliente-Servidor não é o único modelo de comunicação na rede, nem sempre o mais adequado. Por exemplo, imagine que precisa contar as letras de 20 palavras. No caso do modelo Cliente-Servidor, quem fará esse trabalho é o servidor, certo? E se precisar contar as letras de 1 milhão de palavras? Muito trabalhoso para o servidor não?
+
+O modelo Cliente-Servidor tenta centralizar o trabalho no servidor, mas isso também pode gerar gargalos. Se cada Cliente poderia ajudar no trabalho, ou seja, assumir um pouco da responsabilidade do servidor seria muito mais rápido. Isso é a ideia do P2P! Não há mais uma clara divisão entre Cliente-Servidor, cada cliente também é servidor e vice versa!
+
+Isto é útil quando você precisa de distribuir um trabalho ou gostaria de baixar algo de vários lugares. Faz sentido?
+
+Usando algum aplicativo de Torrent o protocolo utilizado não é o HTTP e sim o Bittorrent.
+
+-------------------------------------------------------------------------------------------
+
+HTTPS
+Quando usamos HTTP os dados são enviados em texto puro.
+
+O cliente usa uma chave publica para criptografar os dados e quando chega no servidor o mesmo tem uma chave privada para descriptografar os dados, isso se chama chaves assimetricas e garante a segurança da informação trafegada,
+pois ngm conhece a chave privada que o servidor utiliza
+-(essa estrategia de criptografia se chama "criptografia assimétrica"(ele tem um defeito que é muito lenta).
+-Existe a criptografia simétrica é muito mais rápida mas infelizmente não tão segura(ela usa a chave publica no cliente e no servidor).)
+-HTTPs usa ambos os métodos de criptografia, assimétrica e simétrica.
+-cliente e servidor geram uma chave simétrica ao vivo. Uma chave só para eles! Essa chave exclusiva (e simétrica) é utilizada para o restante da comunicação.
+-Então HTTPs começa com criptografia assimétrica para depois mudar para criptografia simétrica. E essa chave simétrica será gerado no início da comunicação e será aproveitado as requisições seguintes. Bem vindo ao mundo fantástico do HTTPS :)
+
+
+Em geral, a chave publica é utilizada por qualquer um que queira se comunicar com Alura pois faz parte do certificado. A chave privada só o Alura conhece, essa chave não é compartilhada com ninguém.
+
+-só com HTTPs a web é segura
+-HTTPs significa usar um certificado digital do servidor
+-o certificado prova a identidade e tem validade
+-o certificado possui uma chave publica
+-a chave é utilizada pelo navegador para criptografar os dados
+
+Aprendemos nesse capítulo que só com HTTPs a web se torna segura. Para enviar dados de maneira segura devemos utilizar uma chave pública, e o servidor usa em troca uma chave privada. A chave pública está embutida dentro de um certificado, a chave privada fica visível apenas no lado do servidor. O certificado que possui a chave pública, confirma a identidade de um site ou aplicação, possui o endereço do site e a validade. O certificado é emitido por uma autoridade certificadora que o navegador confia.
+
+Uma autoridade certificadora (CA - Certificate Authority) é um órgão que garante ao navegador e ao usuário que a identidade de um site é realmente válida. Portanto, podemos trocar informações com este sem riscos!
+
+----------------------------------------------------------------------------------------------
+
+Dominio
+
+www.alura.com.br -->Este é o dominio
+www.alura.com.br/course/http/section/3 --> e depois da barra é o recurso que eu quero acessar
+
+Estrutura da url
+
+Protocolo://dominio:porta/recurso -->url
+caso não seja a porta padrão do protocolo então tenho que informa a porta de maneira explicita
+
+-URL são os endereços da Web
+-Uma URL começa com o protocolo (http://) seguido pelo domínio (www.alura.com.br)
+-Após o domínio é especificado o caminho para um recurso (/curso/http)
+-Um recurso é algo concreto na aplicação que queremos acessar
+
+O protocolo smb (Server Message Block) realmente existe e é utilizado para compartilhar arquivos dentro de uma rede local.
+
+O domínio www.alura.com.br possui o IP 107.20.180.233.
+
+
+Uma URL é uma URI mas não todas as URI's são URL's! Existem URI's que identificam um recurso sem definir o endereço, nem o protocolo. Em outros palavras, uma URL representa um identificação de um recurso (URI) através do endereço, mas não todas as identificações são URL's.
+Humm ... ficou claro? Não? Vamos dar um exemplo! Existe um outro padrão que se chama URN (Uniform Resource Name). Agora adivinha, os URN's também são URI's! Um URN segue também uma sintaxe bem definida, algo assim urn:alura:course:introducao-html-css. Repare que criamos uma outra identificação do curso Introdução ao HTML e CSS da Alura, mas essa identificação não é um endereço.
+
+-o protocolo HTTP segue o modelo Requisição-Resposta
+-sempre o cliente inicia a comunicação
+-uma requisição precisa ter todas as informações para o servidor gerar a resposta
+-HTTP é stateless, não mantém informações entre requisições
+-As plataformas de desenvolvimento usam sessões para guardar informações entre requisições
+
+Quando falamos de Cookies na verdade queremos dizer Cookies HTTP ou Cookie web. Um cookie é um pequeno arquivo de texto, normalmente criado pela aplicação web, para guardar algumas informações sobre usuário no navegador. Quais são essas informações depende um pouco da aplicação. Pode ser que fica gravado alguma preferência do usuário. Ou alguma informações sobre as compras na loja virtual ou, como vimos no vídeo, a identificação do usuário. Isso depende da utilidade para a aplicação web.
+
+É importante lembrarmos que a comunicação sempre começa com o cliente: é ele quem pede as informações. O servidor responde apenas o que foi requisitado e nunca inicia a comunicação :)
+No HTTP: Request -> espera -> Resposta
+
+codigo 301 http ->Redireciona para um outro recurso(no header do http tem um atributo chamado location que informa a nova url que o browser tera que solicitar)
+codigo 200 -> OK
+Codigo 500 -> erro no processamento
+
+---------------------------------------
+
+metodos
+
+GET ->Receber dados,params na url
+POST -> submeter dados,params no corpo da requisição
+
+-para declarar um parâmetro da requisição usamos ? após do recurso
+-vários parâmetros são separados pelo &
+-params são utilizados para definir detalhes da pesquisa ou enviar dados de um formulário
+-params no GET fazem parte da URL
+-existem outros métodos HTTP como POST, DELETE e PUT
+-params no POST fazem parte do corpo da requisição
+
+Quando enviamos parâmetros na URL devemos iniciar pelo ?, o nome do parâmetro, um = para separar o nome do parâmetro do seu valor:
+?nome_do_parametro=seu_valor
+
+Quando usamos mais do que um parâmetro devemos usar &:
+?nome_do_parametro=seu_valor&nome_do_outro_param=valor
+
+
+
+CODIGO 201 HTTP
+
+O código da resposta é 201. Lembrando que os códigos que começam com 2xx indicam que tudo deu certo. O 201 significa CREATED e é normalmente utilizado como resposta ao um HTTP POST que causou a criação de um novo recurso.
+Por exemplo, quando o aluno abre um dúvida no fórum é enviado um HTTP POST para criar e salvar a dúvida no Alura. Como resposta o Alura poderia devolver 201, indicando que a criação foi um sucesso.
+
+Autenticação
+
+Quando acessamos um recurso protegido, o servidor nos devolve um código 401 (Unauthorized). Mas para o formulário(que ira solicitar usuario e senha) ser exibido, o servidor precisa dizer ao navegador que usaremos autenticação básica. E ele fará isso devolvendo na resposta um header cabeçalho chamado WWW-Authenticate com o valor Basic.
+
+HTTP/1.1 401 Unauthorized
+X-Powered-By: Express
+WWW-Authenticate: Basic
+Date: Thu, 11 Jun 2015 21:35:44 GMT
+Connection: keep-alive
+Transfer-Encoding: chunked
+
+Com autenticação básica, os dados são trafegados em texto cifrados em Base64
+Ao submetermos o formulário de autenticação, esses dados são enviados para o servidor através do header Authorization.
+
+Authorization: Basic YWx1cmE6aHR0cA==
+

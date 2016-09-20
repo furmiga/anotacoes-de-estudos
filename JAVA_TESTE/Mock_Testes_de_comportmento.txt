@@ -1,0 +1,158 @@
+O mockito é um auxiliar para testes unitarios , com ele podemos simular comportamentos de um teste, podemos fazer metodos agirem como queremos, lançar exceçoes etc, resumindo , simulamos comportamentos com nosso objetos
+
+Simulando comportamentos com Mock Objects
+
+Com o mockito podemos criar objetos falsos para usalos em testes, por exemplo se eu tenho um DAO e quero informar valores nele,para que nao tenha que ficar sempre consultando no banco, eu crio um objeto falso e falo os valores que ele deve retornar
+
+		Leilao leilao1 = new CriadorDeLeilao().para("TV de plasma").naData(antiga).constroi();
+        Leilao leilao2 = new CriadorDeLeilao().para("Geladeira").naData(antiga).constroi();
+
+        List<Leilao> leiloesAntigos = Arrays.asList(leilao1, leilao2);
+
+        // criando o mock!
+        LeilaoDao daoFalso = mock(LeilaoDao.class);
+        // ensinando o mock a reagir da maneira que esperamos!
+        when(daoFalso.correntes()).thenReturn(leiloesAntigos);
+		
+		EncerradorDeLeilao encerrador = new EncerradorDeLeilao();
+        encerrador.encerra();
+
+        assertTrue(leilao1.isEncerrado());
+		
+		MAS TEMOS QUE PASSAR ESTE DAO FALSO PARA A NOSSA CLASSE QUE A UTILIZARA , ENTÃO NO EncerradorDeLeilao tenho que passar o DAO no construtor
+		
+		public EncerradorDeLeilao(LeilaoDao dao) {
+			this.dao = dao;
+		}
+		
+		//e no teste eu passo o DAO
+		EncerradorDeLeilao encerrador = new EncerradorDeLeilao(daoFalso);
+
+Mock objects são uma ótima alternativa para facilitar a escrita de testes de unidade para classes que dependem de outras classes!
+
+O que acontece se comentar a linha do when(...). Por exemplo:
+	R:Quando você invoca um método no mock que não foi previamente ensinado a responder algo, o Mockito faz o seguinte: - Se o método retorna um inteiro, double, ou um tipo primitivo qualquer, ele retornará 0 - Se o método retorna uma lista, o Mockito retornará uma lista vazia - Se o método retorna uma outra classe qualquer, o Mockito retorna null.
+Sempre defina os comportamentos que você espera no seu mock.
+
+
+É impossível mockar métodos estáticos!
+Por esse motivo, desenvolvedores fanáticos por testes evitam ao máximo criar métodos estáticos!
+
+Fuja deles! Além de serem difíceis de serem testados, ainda não são uma boa prática de orientação a objetos.
+
+Sempre que for trabalhar com mocks, pense em criar interfaces entre suas classes. Dessa forma, seu teste e código passam a depender apenas de um contrato, e não de uma classe concreta.
+
+---------------------------------------------------------------------------------------
+Garantidos que metodos foram invocados
+
+Caso eu queira saber se um metodo foi invocado basta usar o verify do mockito
+ -->Estou verificando se o metodo atualiza foi chamado (e aqui ele tem que ser chamado apenas uma vez)
+ verify(daoFalso, times(1)).atualiza(leilao1);
+ -->Poderia tambem fazer assim , neste caso ele pode ser chamado n vezes que o teste vai passar
+ verify(daoFalso).atualiza(leilao1);
+ 
+em vez de passar o time podemos ter ouytros atributos como
+
+o never() -->indica que o metodo não deve ser chamado
+	verify(daoFalso, never()).atualiza(leilao1);
+O método atLeastOnce() vai garantir que o método foi invocado no mínimo uma vez. Ou seja, se ele foi invocado 1, 2, 3 ou mais vezes, o teste passa. Se ele não for invocado, o teste vai falhar.
+O método atLeast(numero) funciona de forma análoga ao método acima, com a diferença de que passamos para ele o número mínimo de invocações que um método deve ter.
+Por fim, o método atMost(numero) nos garante que um método foi executado até no máximo N vezes. Ou seja, se o método tiver mais invocações do que o que foi passado para o atMost, o teste falha.
+ 
+Caso eu queira garantir que os metodos foram executados em ordem basta fazer assim:
+			
+		InOrder inOrder = inOrder(enviadorEmail , leilaoDao);
+		// a primeira invocação
+		inOrder.verify(leilaoDao, times(1)).atualiza(leilao1);
+		// a segunra invocação
+		inOrder.verify(enviadorEmail, times(1)).envia(leilao1);
+
+--------------------------------------------------------------------------------------
+
+EXCEÇÕES
+
+As vezes eu posso querer que uma rotina lançe uma exceção para testar seu comportamento, o mockito simula exceções nos metodos usando o doThrow:
+
+
+when(daoFalso.correntes()).thenReturn(Arrays.asList(leilao1, leilao2));
+doThrow(new RuntimeException()).when(daoFalso).atualiza(leilao1);
+
+Agora quando chamar o metodo atualiza do objeto daoFalso ele ira lançar uma exceção, e com isso posso por exemplo verificar, caso de uma exceção o metodo atualiza não sera chamado por exemplo
+
+verify(daoFalso, times(0)).atualiza(leilao1);
+
+No caso abaixo estou lançando exceção para o leilão1 e 2 mas se eu tivesse um 3 ou 4 teria que adicionar uma linha nova, eu posso usar o any para dizer que tem que por exemplo lançar exceção para todos os leiloes
+
+	doThrow(new RuntimeException()).when(leilaoDao).atualiza(leilao1);
+	doThrow(new RuntimeException()).when(leilaoDao).atualiza(leilao2);
+
+	MUDAR PARA
+
+	doThrow(new RuntimeException()).when(leilaoDao).atualiza(any(Leilao.class));
+	
+	--
+	verify(enviadorEmail , never()).envia(leilao1);
+	verify(enviadorEmail , never()).envia(leilao2);
+	
+	MUDAR PARA
+	
+	verify(carteiroFalso, never()).envia(any(Leilao.class));
+	
+
+	A classe Matchers possui diversos métodos que podem ser usados para especificarmos que argumentos nosso mock pode receber numa chamada de método. Isso permite escrever testes mais facilmente e deixa nosso código mais flexível.
+Podemos, por exemplo, garantir que um mock vai ser chamado com uma String começando com "Importante:". Veja só:
+
+verify(meuMock).imprimeMensagem(startsWith("Importante:"));
+
+-----------------------------------------------------------------
+
+Caso eu queira capturar algum argumento de um metodo void
+
+		ArgumentCaptor<Pagamento> argumento =  ArgumentCaptor.forClass(Pagamento.class);
+		verify(pagamentos).salva(argumento.capture());
+		Pagamento pagamentoCapturado = argumento.getValue();
+		assertEquals(2500.0 , pagamentoCapturado.getValor() , 0.00001);
+		
+	---Mais exemplos dar uma olhada no projeto
+	
+
+Geralmente optamos por mockar classes que são difíceis de serem testadas. Por exemplo, se não mockarmos um DAO ou uma classe que envia e-mail, dificilmente conseguiremos testar aquela classe.	
+obs:mockar significa pedir para o mock criar a classe :ex Avaliador avaliador = mock(Avaliador.class);<--repare que é o mock que vai criar a instancia desta classe Avaliador
+
+
+-----------------------------------------------------------
+
+Quando temos metodos estaticos não podemos mockar logo existe uam alternativa que seria criar uma abstração
+
+por exemplo o Calendar.getInstance, ele é estatico , logo podemos criar uma abstração para ele
+
+public interface Relogio {
+	Calendar hoje();
+}
+
+public class RelogioDoSistema implements Relogio{
+	public Calendar hoje() {
+		return Calendar.getInstance();
+	}
+}
+
+e no teste eu posso fazer assim:
+
+Relogio relogio = mock(Relogio.class);
+
+// dia 7/abril/2012 eh um sabado
+Calendar sabado = Calendar.getInstance();
+sabado.set(2012, Calendar.APRIL, 7);
+
+// ensinamos o mock a dizer que "hoje" é sabado!
+when(relogio.hoje()).thenReturn(sabado);
+
+-->Pronto agora mockamos
+
+abstraimos apenas para podemos mockar
+
+uma ótima dica para se levar é: se está difícil testar, é porque nosso projeto de classes não está bom o suficiente.
+
+Idealmente, deve ser fácil escrever um teste de unidade. Use seus conhecimentos de orientação a objetos, crie abstrações, escreva classes pequenas, diminua o acoplamento.. Tudo isso facilitará o seu teste!
+
+

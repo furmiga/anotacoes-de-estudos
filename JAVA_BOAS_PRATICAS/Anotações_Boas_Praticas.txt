@@ -1,0 +1,54 @@
+﻿Padrão de projeto strategy(esse eu lembro de cabeça kkkk).
+
+O padrão Strategy é muito útil quando temos um conjunto de algoritmos similares, e precisamos alternar entre eles em diferentes pedaços da aplicação. No exemplo do vídeo, temos diferentes maneira de calcular o imposto, e precisamos alternar entre elas.
+
+Um padrão de projeto é uma solução elegante para um problema que é recorrente no dia-a-dia do desenvolvedor.
+
+O mais importante ao estudar padrões de projeto é entender qual a real motivação do padrão, e quando ele deve ser aplicado.
+
+-------------------------------------------
+Padrão chain of responsibility
+
+O padrão de projeto de software Chain of Responsibility representa um encadeamento de objetos receptores para o processamento de uma série de solicitações diferentes. Esses objetos receptores passam a solicitação ao longo da cadeia até que um ou vários objetos a tratem.
+
+O padrão Chain of Responsibility cai como uma luva quando temos uma lista de comandos a serem executados de acordo com algum cenário em específico, e sabemos também qual o próximo cenário que deve ser validado, caso o anterior não satisfaça a condição.
+Nesses casos, o Chain of Responsibility nos possibilita a separação de responsabilidades em classes pequenas e enxutas, e ainda provê uma maneira flexível e desacoplada de juntar esses comportamentos novamente.
+
+-------------------------------------------
+Padrão TemplateMethod(Esse eu tamebm lembro)
+
+Ele consiste em criar uma classe que possua algum algoritimo que utilizae metodos que serão implementados apenas pelas classes filhas
+
+Um Template Method auxilia na definição de um algoritmo com partes do mesmo definidos por métodos abstratos. As subclasses devem se responsabilizar por estas partes abstratas, deste algoritmo, que serão implementadas, possivelmente de várias formas, ou seja, cada subclasse irá implementar à sua necessidade e oferecer um comportamento concreto construindo todo o algoritmo.
+
+Quando temos diferentes algoritmos que possuem estruturas parecidas, o Template Method é uma boa solução. Com ele, conseguimos definir, em um nível mais macro, a estrutura do algoritmo e deixar "buracos", que serão implementados de maneira diferente por cada uma das implementações específicas.
+
+Uma dica..Quando temos um metodo na classe que tera os metodos abstratos e que utiliza os mesmos é melhor deixar este metodo como final para que as classes filhas não possam sobreescrever este metodo que tem o algoritimo
+
+---------------------------------------
+
+Padrão de projetos Decorator
+
+Sempre que percebemos que temos comportamentos que podem ser compostos por comportamentos de outras classes envolvidas em uma mesma hierarquia, como foi o caso dos impostos, que podem ser composto por outros impostos. O Decorator introduz a flexibilidade na composição desses comportamentos, bastando escolher no momento da instanciação, quais instancias serão utilizadas para realizar o trabalho.
+
+
+A quebra de encapsulamento pode ser tolerada em alguns momentos(dar uma olhada nos projetos que fiz de exemplo sobre state)
+
+
+---------------------------------------
+
+
+Padrão de projetos builder
+
+Um dos problemas da utilização de construtores é que, em casos onde diversos atributos sejam opcionais, precisaríamos ter uma combinação gigante de construtores (uma para cada possível combinação de atributos obrigatórios e opcionais), tornando o código difícil de manter. Além disso, como construir esse objeto é complicado, colocar essa regra no construtor do objeto, só faz com que ele tenha agora mais uma responsabilidade.
+Em outros casos, poderíamos ter diversos if's dentro do construtor. Quanto mais complexo for o processo de criação da classe, mais você deve pensar em isolá-lo em uma classe específica.
+
+O Builder possibilita a separação da complexidade da criação desse objeto em uma classe específica para isso, além de possibilitar a implementação de atributos opcionais mais facilmente.
+
+Sempre que tivermos um objeto complexo de ser criado, que possui diversos atributos, ou que possui uma lógica de criação complicada, podemos esconder tudo isso em um Builder.
+
+---------------------------------------
+Padrão de Projetos Observer
+
+Quando o acoplamento da nossa classe está crescendo, ou quando temos diversas ações diferentes a serem executadas após um determinado processo, podemos implementar o Observer.
+Ele permite que diversas ações sejam executadas de forma transparente à classe principal, reduzindo o acoplamento entre essas ações, facilitando a manutenção e evolução do código.

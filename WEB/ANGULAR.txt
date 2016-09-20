@@ -1,0 +1,400 @@
+Angular é um script como outro qualquer, por isso precisa ser importado em nossa página através da tag script, mas isso não é suficiente. Precisamos criar um módulo (outro script) e importá-lo em nossa página. Este módulo é apelidado de principal, porque é o primeiro que será carregado pelo Angular e que pode ou não carregar outros a partir dele, isto é, suas dependências. Importar o script do módulo também não é suficiente, por quê? Se tivéssemos carregado vários scripts de módulos em nossa página, como o Angular saberia qual inicializar primeiro? É por isso que precisamos usar a diretiva ng-app, que possui como valor o nome do módulo que desejamos carregar assim que nossa página for carregada.
+
+--Modulo
+Criando um Modulo principal no angular
+
+Sem nenhuma dependencia
+angular.module('alurapic', []);
+ou 
+com dependencia
+angular.module('alurapic', ['calopsitaStyle']);
+
+--Angular Expressions
+Usamos Angular Expressions (AE's) para abrir lacunas em views.
+A sintaxe de uma AE é {{nomeDaPropriedade}}
+
+ Mas quem fornece os dados para que essas "lacunas" sejam tapadas? Essa é a responsabilidade de um Controller no mundo MVC e também no mundo Angular. Caso não exista nenhum controller ou caso o controller não forneça os dados de que a AE precisa, Angular não emite um erro, simplesmente considera seu valor uma String em branco, como "".
+ 
+--Controller
+ Um controller pode ser criado com um módulo ou mais tarde adicionado em um módulo já existente. Por exemplo:
+// criando com um módulo
+angular.module('contabilidade', []).controller('LancamentosController', function() { });
+A função controller recebe como primeiro parâmetro o nome do controller e como segundo a função que o define
+
+Vejamos agora um exemplo criando um controller para um módulo já existente, que está perfeitamente correto:
+
+angular.module('estoque').controller('Provisao', function($scope) { });
+
+No exemplo anterior, como não passamos o array [] como segundo parâmetro da função module, significa que estamos criando um controller para o módulo estoque que já foi criado.
+
+angular.module('alurapic').controller('FotosController', function($scope) {
+
+    $scope.foto = {
+        titulo : 'Leão',
+        url : 'http://www.fundosanimais.com/Minis/leoes.jpg'
+    };
+
+});
+
+-->Agora atraves e angular expression podemos acessar os dados deste controller {{foto.titulo}}
+
+A comunicação é feita através de $scope, um objeto que é a ligação entre o controller e a view. Qualquer propriedade adicionada neste objeto estará disponível na view e acessível através de AEs. 
+
+DATA BINDING significa associação de dado, isto é, podemos associar um dado à view através de Angular Expression e qualquer mudança nesse dado refletirá na sua apresentação na view.
+
+Uma Angular Expression (AE) é somente leitura, isto é, nossa view lê a informação no escopo do controller, mas não é capaz de atualizá-la. Este tipo de associação é chamado de one-way data binding, porque a informação flui do controller para a view e não contrário. Aliás, esse dado associado à view poder ser qualquer tipo literal do JavaScript, inclusive um objeto.
+Angular não se coaduna com a prática do Progressive Enhancement, no qual criamos uma página usando um simples HTML e CSS sem JavaScript para depois então adicionar melhorias. Se por acaso alguma dessas melhorias deixarem de funcionar, não comprometerá o acesso ao conteúdo por parte do usuário. No caso do Angular, se o JavaScript estiver desligado ou se o dispositivo no qual nossa aplicação é carregada não o suporta, nada da aplicação funcionará.
+
+------------------------------------------------------------------------------------------------------
+Diretivas do Angular começam com ng-
+
+se eu quero uma diretiva do Angular que repita a criação de uma marcação HTML para uma determinada lista temos a diretiva ng-repeat:
+
+-->caso meu controller fotos seja um array ele ja faz o loop aqui
+<div class="panel panel-default" ng-repeat="foto in fotos">
+</div>
+$http -->Serviço do angular responsavel em realizar requisições ajax
+
+O que $http.get nos retorna é uma promessa de que ele buscará os dados. Sabemos que se essa promessa for cumprida, teremos os dados, caso contrário, ficaremos a ver navios. Tecnicamente falando, o que $http.get retorna é uma promise:
+
+Quando essa promessa for cumprida, daí (then) podemos ter acesso aos dados retornados:
+
+angular.module('alurapic').controller('FotosController', function($scope, $http) {
+
+    $scope.fotos = [];
+
+		var promise = $http.get('/v1/fotos');
+		promise.then(function(retorno) {
+			$scope.fotos = retorno.data;
+		}).catch(function(erro) {
+        console.log(erro)
+	});
+	
+	
+	
+Ou ainda usarmos success e error. A diferença é que com success não precisamos fazer retorno.data:
+
+	angular.module('alurapic').controller('FotosController', function($scope, $http) {
+
+		$scope.fotos = [];
+
+		$http.get('/v1/fotos')
+		.success(function(retorno) {
+			console.log(retorno);
+			$scope.fotos = retorno; // não precisa fazer retorno.data
+		})
+		.error(function(erro) {
+			console.log(erro);
+		});
+
+	});
+-------------------------------------------------------------------------------------------------------------------------------
+
+DIRETIVAS
+
+Para criar uma diretiva em angular basta faze assim:
+	angular.module("minhasDiretivas",[])
+	.directive('meuPainel' , function(){});
+
+Ela recebe como primeiro parâmetro o nome da diretiva em camelCase e como segundo uma função que deve retornar um directive definition object (DDO):
+	Um objeto em JS
+
+	angular.module('minhasDiretivas', [])
+    .directive('meuPainel', function() {
+        var ddo = {};
+        return ddo;
+    });
+
+Uma diretiva em Angular pode ser usada como Elemento, Atributo ou Comentário (esta última muito incomum). Vamos estipular que nossa diretiva pode ser usada tanto como atributo ou como elemento, adicionando em nosso DDO a propriedade restrict com valor "AE":
+
+	angular.module('minhasDiretivas', [])
+    .directive('meuPainel', function() {
+        var ddo = {};
+		
+        ddo.restrict = "AE";
+
+        return ddo;
+    });
+Como eu posso usar como atributo ou elemento os dois modos abaixo são validos
+	<meu-painel></meu-painel> -->Como elemento
+	<div meu-painel></div> -->como atributo
+	
+Agora como fazemos para obter valores externos(ou seja quem chamar nossa diretiva passar valores)
+
+	angular.module('minhasDiretivas', [])
+    .directive('meuPainel', function() {
+
+        var ddo = {};
+        ddo.restrict = "AE";
+
+        ddo.scope = {
+            titulo: '@titulo'
+        };
+
+        return ddo;
+    });
+	
+Criamos a propriedade titulo no escopo isolado da diretiva, porém o valor desta propriedade é curioso. Veja que nele temos @titulo, a sintaxe @ indica que estamos copiando o valor como string do atributo titulo adicionando na diretiva em nossa marcação. Porém, quando o nome do atributo na diretiva na marcação é igual ao nome da propriedade que guardará o seu valor, podemos deixar apenas @:
+
+ex: <meu-painel titulo="{{foto.titulo}}"></meu-painel> -->usando a diretiva e passando o vcalor do titulo como atributo
+
+a diretiva tambe precisa retornar algo para nós(o html que sera subtituido) para isso usasmo o template do DDO
+
+	angular.module('minhasDiretivas', [])
+    .directive('meuPainel', function() {
+
+        var ddo = {};
+
+        ddo.restrict = "AE";
+
+        ddo.scope = {
+            titulo: '@'
+        };
+
+        ddo.template = 
+                '<div class="panel panel-default">'
+            +   '   <div class="panel-heading">'
+            +   '        <h3 class="panel-title text-center">{{titulo}}</h3> '
+            +   '   </div>'
+            +   '   <div class="panel-body">'
+            +   '   </div>'
+            +   '</div>'
+
+        return ddo;
+    });
+
+Mas agora caso queiramos que o angular considere a existencia de tag filhas temos que usar o transclude(pois o angular manipula o DOM então quando ele ve a diretiva ele pega aquela tag e substitui pelo valor que ira retornar da diretiva, logo se vc tiver tags dentro do <meu-painel> por exemplo , elas serão desconsideradas)
+
+	<meu-painel ng-repeat="foto in fotos" titulo="{{foto.titulo}}">
+        <img class="img-responsive center-block" src="{{foto.url}}" alt="{{foto.titulo}}">
+    </meu-painel>
+	//Neste exemplo a tag img não seria considerada
+
+		angular.module('minhasDiretivas', [])
+    .directive('meuPainel', function() {
+
+        var ddo = {};
+
+        ddo.restrict = "AE";
+        //INSERIMOS ESTA LINHA NOVA
+		ddo.transclude = true;
+
+        ddo.scope = {
+            titulo: '@'
+        };
+
+        ddo.template = 
+                '<div class="panel panel-default">'
+            +   '   <div class="panel-heading">'
+            +   '        <h3 class="panel-title text-center">{{titulo}}</h3> '
+            +   '   </div>'
+            +   '   <div class="panel-body" ng-transclude>' -->E AQUI TEMOS QUE INFORMAR EM QUAL TAG SERA APLICADO O TRANSCLUDE
+            +   '   </div>'
+            +   '</div>'
+
+        return ddo;
+    });
+	
+	podemos tambem substituir o ddo.template por ddo.templateUrl e passa uma url com a pagina que tem o conteudo html
+		 ddo.templateUrl = 'js/directives/meu-painel.html';          
+	
+	
+	
+Toda diretiva deve sempre retornar um DDO (Directive Definition Object) configurado para que funcione:
+
+angular.module('caplositaSA').directive('papagaioDePirata', function() {
+      var meuDDO = {};
+      // configura o DDO
+     return meuDDO;
+});
+
+Mesmo usando camelCase na definição da diretiva, devemos utilizar o hífen na marcação HTML. Com a propriedade restrict declaramos que ela pode ser utilizada tanto como atributo (A) quanto elemento (E).
+Ou seja, podemos usar a diretiva como elemento:
+
+<abas-dinamicas-especiais></abas-dinamicas-especiais>
+E como atributo:
+
+<div abas-dinamicas-especiais></div>
+
+
+documentação do angular sobre diretivas https://docs.angularjs.org/guide/directive
+
+-----------------------------------------------------------------------------------------------------------------------------------
+
+Filtrar a lista
+
+angular.module('alurapic').controller('FotosController', function($scope, $http) {
+
+    $scope.fotos = [];
+    //colocamos a propriedade filtro
+	$scope.filtro = '';
+	/*O resto do codigo*/
+
+});
+
+
+two-way data binding -->na ES é chamada de on way data binding pq ele só le os dados agora vamos inputar dados e ler os dados
+
+ toda AE é somente leitura, isto é, não é capaz de atualizar $scope, que é justamente o que precisamos. É com base no que o usuário digitar que elaboraremos nossa estratégia de busca. Não queremos um data binding unidirecional, queremos um bidirecional, aquele que é capaz de ler de $scope, inclusive atualizar seu valor de acordo com a entrada do usuário.
+
+Felizmente o Angular suporta two-way data binging. A diferença é que não usamos AE, mas a diretiva ng-model. Vamos adicioná-la no input que recebe o filtro do usuário:
+
+	<form>
+		<input class="form-control" placeholder="filtrar pelo título da foto" ng-model="filtro">
+    </form>
+	//colocamos o atributo ng-model="filtro" -->agora nosso atributo filtro que colocamos no nosso controller ja esta recebendo os valores digitados, mas temos que usalo para filtrar nossa lista de fotos
+	
+	Bem, toda vez que o usuário digitar neste campo, a propriedade $scope.filtro será atualizada! Excelente, mas como utilizaremos o valor corrente de $scope.filtro para filtrar a lista de fotos? A diretiva ng-repeat aceita receber um filtro através da propriedade filter, que deve ser adicionada imediatamente após um pipe |, sendo assim, ela ficará assim: ng-repeat="foto in fotos | filter: filtro"
+		Além disso, podemos adicionar uma função no filter, para definir a regra de comparação. Vejo o exemplo:
+
+    <li ng-repeat="funcionario in funcionarios | filter: textoFiltro: function(atual, esperado) { return angular.equals(atual, esperado)}">
+        {{funcionario.nome}}
+    </li>
+	-->Neste caso so ira retornar se o nome digitado for exatamente igual a um dos atributos do objeto que o angular utiliza para pesquisar
+	ou podemos simplicar fazendo apenas 
+		  <li ng-repeat="funcionario in funcionarios | filter: textoFiltro: true">
+			 {{funcionario.nome}}
+		 </li>
+	
+	--Agora que colocamos o filtro no repeat a nossa lista sera atualizada 
+		.Vale ressaltar que o filtro é aplicado em todas as propriedade do objeto foto de nossa lista, sendo assim, podemos encontrar uma foto pelo seu título, descrição, etc.
+		
+Podemos tambem aplicar alguns efeitos na transição de remover as fotos da lista
+	Primeitamente temos que adicionar mais um modulo no nosso modulo principal
+		angular.module('alurapic', ['minhasDiretivas', 'ngAnimate']);
+	Quando usamos o módulo ngAnimate, algumas diretivas do Angular passam a adicionar ou remover classes automaticamente sem a nossa ciência
+		Por exemplo, quando usamos a diretiva ng-repeat e um elemento sai da lista ele ganha a classe ng-leave, e quando está para sair ng-leave-active.
+	Então se quisermos aplicar efeitos basta criar um css com essas classes
+	
+	.painel-animado {
+		-moz-transition:transform 0.8s;
+		-webkit-transition:transform 0.8s;
+		-ms-transition:transform 0.8s;
+		-o-transition:transform 0.8s;
+		transition:transform 0.8s;
+	}
+
+	.painel-animado.ng-leave-active {
+	  -moz-transform: scale(0.1);
+	  -webkit-transform: scale(0.1);
+	  -ms-transform: scale(0.1);
+	  -o-transform: scale(0.1);
+	  transform: scale(0.1);
+	}	
+	
+	e na minha tag eu vinculo o css <meu-painel class="col-md-2 painel-animado" ...
+	
+	mas o angular ira filtrar a lista cada letra que digitarmos , então podemos dar um delay e informar o css para atualizar depois de x segundos(isso pode ate ser um fator de performance), usamos a ng-model-options e passamos um objeto javascript para ela com um atributo chamado debounce e para ele atribuimos um tempo de delay em milisegundos, como no exemplo abaixo:
+		-<input class="form-control" placeholder="filtrar pelo título da foto" ng-model="filtro" ng-model-options="{ debounce: 500 }">
+
+O que aprendemos
+.a diretiva ng-model e two-way data binding
+.aplicação de filtro na diretiva ng-repeat
+.ng-model-options e postergação do two-way data binding
+.animações com o módulo ngAmimate
+.animações requerem conhecimento sólido de CSS3
+
+A diretiva ng-model permite ler e também alterar o model associado (two-way data binding). É muito comum em telas de cadastro, onde precisamos capturar os dados do usuário para depois enviá-los numa requisição Ajax:
+<input type="text"  ng-model="nome">
+A Angular Expression (AE) apenas lê o model (one-way data binding). Podemos usar a diretiva ng-bind no lugar da AE, é apenas outra maneira de expor o model em somente leitura:
+
+<p> {{nome}} </p>
+É a mesma coisa que:
+
+<p ng-bind="nome"></p>
+
+-------------------------------------------------------------------------------------
+
+Rotas
+
+------Explicação do ngRoute para criação de rotas esta na aula 5-dividindo e conquistando do curso de angular JS (junto da explicação de controle de erros que la tem)
+
+Para que possamos configurar rotas no lado do cliente, o módulo ngRoute precisa estar carregado, isso significa que precisamos importar o script do módulo e adicioná-lo como dependência de algum módulo que realizará a configuração de rotas. Por exemplo, partindo do pressuposto que o script do módulo de rotas está carregado:
+angular.module('sistema',['ngRoute'])
+
+-------------------------------------------------------------------------------------
+
+CAP 6 -->Revisar direto na AULA(validação e metodo post com o $http)
+
+-------------------------------------------------------------------------------------
+
+Sabemos que o Angular interage com a interface de eventos do JavaScript. Pensando nisto, qual das diretivas abaixo devemos utilizar para detectar o click do usuário em um botão e executar alguma função ?
+	R:ng-click
+	
+	
+Vejamos a seguinte rota:
+...
+$routeProvider.when('/produtos/:produtoId', ....)
+...
+Suponha que o usuário digite o seguinte endereço:
+
+http://localhost:3000/#/produtos/15
+Vejamos o seguinte controller:
+
+angular.module('vendas',[]).controller('ProdutoController', function($scope) {
+   // código faltando
+});
+Complete o código acima para exibir com console.log o ID do produto da rota digitada pelo usuário. Segue o código anterior, basta alterá-lo:
+
+R:angular.module('vendas',[]).controller('ProdutoController', function($scope , $routeParams) {
+   console.log($routeParams.produtoId)
+});
+
+
+Quando usamos o padrão REST, nossa API do servidor deve estar preparada para responder ao verbo DELETE, quando desejamos apagar um recurso, no caso da nossa aplicação, uma foto. Qual das opções abaixo apresenta sintaxe correta?
+
+R:$http.delete('v1/fotos/12')
+.success(function() {
+})
+.error(function(erro) {
+});
+
+
+
+breve exemplo de remover um item da lista
+  var indiceDaFoto = $scope.fotos.indexOf(foto);
+  $scope.fotos.splice(indiceDaFoto, 1);
+    
+------------------------------------------------------------------------------------------
+
+Altere o código acima para colocar {{frase}} em caixa alta, mas usando recursos do Angular
+R:<p>{{frase | uppercase}}</p>
+
+
+Não podemos usar @ para scope.acao. Este modificador sempre passa para diretiva um valor em string . No caso da nossa diretiva, precisamos que scope.acao esteja associada à uma função de um controller, isto é, do escopo pai na qual a diretiva está inserida. Para conseguirmos isso, usamos o modificador &. Sendo assim, para que nossa diretiva funcione, basta uma simples modificação:
+angular.module('minhasDiretivas', [])
+    .directive('meuPainel', function() {
+        // código omitido
+    })
+    .directive('minhaFoto', function() {
+        // código omitido
+    })
+    .directive('meuBotaoPerigo', function() {
+        var ddo = {};
+        ddo.restrict = "E";
+        ddo.scope = {
+            nome: '@',
+            acao : '&' // mudei aqui!
+        }
+        ddo.template = '<button class="btn btn-danger btn-block" ng-click="acao()">{{nome}}</button>';
+        return ddo;
+    });
+	
+CRIANDO UM COMBO BOX
+
+	<select 
+		ng-model="foto.grupo"
+        ng-controller="GruposController"
+        ng-options="grupo._id as grupo.nome for grupo in grupos">
+        <option value="">Escolha um grupo</option>
+    </select>
+			
+A diretiva ng-options possui comportamento parecido com ng-repeat, porém a sintaxe "grupo._id as grupo.nome" indica que o valor do elemento será o ID do grupo e o que será exibido para seleção será seu título. O restante "for grupo in grupos" percorrerá a lista de grupos disponibilizada no escopo do controller, construindo cada item de nossa lista.
+
+O que aprendemos?
+criar uma combobox com Angular
+o papel da diretiva ng-options
+transformação com filtros (ex. uppercase)
+a diferença entre @ e & em diretivas
+
+------------------------------------------------------------

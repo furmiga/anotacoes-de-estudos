@@ -1,0 +1,109 @@
+tESTES MANUAIS
+	.Pensar em um cenario
+	.Executar uma ação
+	.validar a saida
+
+Usando JUNIT para testes de unidade
+	tem que importat a library do juni via buildpath para o projeto
+	anotar o metodo a ser testado com @Test
+	Ex:
+	@Test
+	public void main() {
+		/*Codigo qualquer*/
+		//primeiro parametro valor esperado
+		//segundo parametro valor calculado
+		//Terceito parametro um delta(uma variação que o junit considera(uma margem de erro))
+		Assert.assertEquals(250, leiloeiro.getMenorLance(),0.0001);
+	}
+
+Padrão para nomenclatura de metodos de teste:
+	O padrão é sempre NomeDaClasseTest. Isso facilita a rastreabilidade das classes de teste.
+
+Sempre que fizer testes use a convenção de deixar suas classes de testes em outro source folder(ou seja temo o src , e para os teste criamos outra chamado test e colocamos a classe de test la dentro)
+
+src
+test
+
+REFERENTE AO ULTIMO PARAMETRO PASSADO NO METODO ASSERT(EXEMPLO LOGO ACIMA)
+
+ Como double tem problemas de arredondamento, a versão mais nova do JUnit pede para você passar o "tamanho do  erro aceitável".
+ No caso, estamos passando 0.00001. Ou seja, a diferença entre o esperado e o calculado pode ser de até 0.00001,  que o JUnit entenderá como erro normal de arredondamento.
+
+----------------------------------------------------------------
+Classes de equivalencia
+  -É inviavel escrevermos teste para todas os valores possiveis em um caso(possibilidades infinitas)
+  -Podemos organizar os teste em classes de equivalencia
+  -escreva um teste para classe de equivalencia
+	.Lances em ordem crescente
+	.Lances em ordem decrescente
+	.Lances em ordem randomica
+	.apena um lance
+  -separamos em grupos que testam um comportamento e agora basta para cada classe efetuar o teste com um conjunto de valores
+
+
+import como static o assertEquals para deixar um codigo mais clean
+
+testes de regração são importantes(ou seja caso alterarmos algo no sistema temos que testalo tudo de novo para termos ctz de que nada deixou de funcionar)
+	-Com testes automatizados isso é extremamente facil, pois como ja escrevemos os testes antes , basta rodalos denovo sem perder tempo
+
+
+Quando lidamos com listas, por exemplo, é sempre interessante tratarmos o caso da lista cheia, da lista com apenas um elemento, da lista vazia.
+
+Se estamos lidando com algoritmos cuja ordem é importante, precisamos testar ordem crescente, decrescente, randômica.
+
+Um código que apresente um if(salario>=2000), por exemplo, precisa de três diferentes testes: - Um cenário com salário menor do que 2000 - Um cenário com salário maior do que 2000 - Um cenário com salário igual a 2000
+
+Foque-se na classe que você está testando. Pense sobre o que você espera dela. Como ela deve funcionar? Se você passar tais parâmetros para ela, como ela deve reagir?
+
+------------------------------------------------------------------------
+TDD
+
+vamos escrever o teste primeiro e depois a implementação
+	-fazemos o teste que falha(primeiramente simples)
+	-depois nos fazemos a implementação deste teste e faremos esse teste passar
+	- e posteriormente vamos fazendo testes mais complicados e refatorando o codigo para fazer esses testes passarem
+
+Dar passos pequenos pode ser muito benéfico para a sua implementação. Começar pelo teste mais simples nos possibilita evoluir o código aos poucos (geralmente gostamos de começar pelo caso mais difícil, o que pode dificultar).
+
+não se deixe enganar. Se o método contém uma regra de negócio, teste-o. Você agradecerá no futuro.
+
+Devemos ver o teste falhar, pois é uma das maneiras que temos para garantir que nosso teste foi implementado corretamente. Afinal, um teste automatizado é código, e podemos implementá-lo incorretamente.
+
+Ao ver que o teste que esperamos falhar, realmente falha, temos a primeira garantia de que implementamos ele de maneira correta. Imagine se o teste que esperamos que falhe, na prática não falha. O que aconteceu?
+
+TDD é uma prática de desenvolvimento de software na qual o programador escreve um teste antes do código. TDD nos traz segurança e feedback constante sobre a qualidade do nosso código.
+
+-----------------------------------------------------------------------
+
+Anotação @before faz com que o metodo seja executado antes de cada teste(se eu tenho 3 testes ele ira chamar o metodo 3 vezes)
+    @Before
+    public void criaAvaliador() {
+    
+    }
+existe a anotação @after que é chamado logo apos cada teste
+
+codigos de teste devem ser simples e faceis de evoluir
+
+Teste data builder são classes de builder que criam cenarios para os nossos teste(um builder normal que cria um objeto usado no teste)
+
+Métodos anotados com @BeforeClass são executados apenas uma vez, antes de todos os métodos de teste.
+
+O método anotado com @AfterClass, por sua vez, é executado uma vez, após a execução do último método de teste da classe.
+
+LEMBRANDO QUE ATÉ AGORA ESSES TESTE SÃO TESTES DE UNIDADE E NÃO DE INTEGRAÇÃO
+
+-Quando um teste tem que lançar uma exceção temos que anotar a classe desta forma:
+
+@Test(expected=RuntimeException.class)
+public void naoDeveAvaliarLeiloesSemNenhumLanceDado() {
+	Leilao leilao = new CriadorDeLeilao()
+ 	        .para("Playstation 3 Novo")
+        	.constroi();
+
+	leiloeiro.avalia(leilao);	
+}
+
+-----------------------------------------------------------------------------
+
+PESQUISAR UM POUCO MAIS SOBRE "Hamcrest" -É UMA API DE TESTES QUE TEM METODOS AUXILIARES PARA AJUDAR A ESCREVER TESTES MAIS LIMPOS NO JUNIT
+

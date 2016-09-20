@@ -1,0 +1,28 @@
+-INTALAR O JBOSS TOOLS
+	.ir no eclipse market place e baixao o jboss tools
+
+-Criando um novo projeto com Jboss Forge(essa ferramenta nos auxilia a criar um novo projeto)
+	.ctrl + 3 ->escrever forge(ira abrir um console)
+	.apos startar o forge(tem um play no cantinho do console), podemos comecar a escrever os comandos:
+	.criar um novo projeto:
+		//auron é o nome do nosso projeto
+		//Forge gera um esqueleto de um projeto dentro do Eclipse já na estrutura padrão do Maven com o 			//arquivo pom.xml pré-configurado
+		-project-new --named auron
+	.Gerar as configurações principais de um projeto JavaEE
+		-scaffold-setup
+			.Na saída podemos ver que foram instalados JPA, EJB, CDI entre outros
+
+O JBoss Forge aumenta a produtividade e diminui o tempo de iniciar e fazer as configurações necessárias no projeto. Além disso, os comandos e passos são normalmente muito mais simples, do que, por exemplo, com Maven puro. Outro grande diferencial é que o nosso projeto não depende do JBoss Forge e pode ser usado em ambientes sem JBoss Forge configurado.
+
+---------------------------
+
+Dentro do contexto de criação de um datasource, o arquivo module.xml:
+	R:Descreverá para o JBoss as características do módulo que estamos criando como o driver JDBC utilizado.
+	
+	
+Checked Exception são chamadas de Application Exceptions pelo Servidor de Aplicação.
+
+
+PESQUISAR MAIS SOBRE AUTENTICAÇÃO COM -> Shiro *************
+
+

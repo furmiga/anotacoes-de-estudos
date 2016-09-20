@@ -1,0 +1,42 @@
+Ao efetuar testes em BD, não devemos mockar o objeto.
+
+Qual a diferença entre um teste de integração e um teste de unidade?
+	R:Teste de unidade testa a classe de maneira isolada; um teste de integração testa a classe integrando com um serviço externo real.
+
+Quais são os problemas de se usar mocks (e simular a conexão com o banco de dados) para testar DAOs?
+	R:Ao usar mocks, estamos "enganando" nosso teste. Um bom teste de DAO é aquele que garante que sua consulta SQL realmente funciona quando enviada para o banco de dados; e a melhor maneira de garantir isso é enviando-a para o banco!
+Repare que, na explicação, quando usamos mock objects, nosso teste passou, mesmo estando com bug! Testes como esses não servem de nada, apenas atrapalham.
+
+
+HSQLDB, um banco simples escrito em Java. Repare que um arquivo caelum.db foi criado na raiz do seu diretório; ele é o banco de dados.
+
+------------------------------
+USANDO O FLUSH E O CLEAR
+
+    @Test
+    public void deveDeletarUmUsuario() {
+        Usuario usuario = 
+                new Usuario("Mauricio Aniche", "mauricio@aniche.com.br");
+
+        usuarioDao.salvar(usuario);
+        usuarioDao.deletar(usuario);
+
+        //pelo fato do hivernate cachear muita coisa, é uma boa pratica que dermos o flush para efetuar as 	//alterações no banco
+        session.flush();
+        //aqui limpamos o cache do hibernate, para evitar problemas
+        session.clear();
+
+        Usuario usuarioNoBanco = 
+                usuarioDao.porNomeEEmail("Mauricio Aniche", "mauricio@aniche.com.br");
+
+        assertNull(usuarioNoBanco);
+
+    }
+
+
+Para que serve o "flush" no meio do teste?
+	R:Para enviar os comandos SQL criados até então para o banco de dados e garantir que o banco os processou.
+
+
+Precisamos forçar o Hibernate a enviar comandos para o banco de dados, e garantir que as próximas consultas levarão em consideração as anteriores. Para isso, o flush() torna-se obrigatório em alguns testes!
+Geralmente em testes que fazemos SELECTs logo após uma deleção ou alteração em batch, o uso do flush é obrigatório.

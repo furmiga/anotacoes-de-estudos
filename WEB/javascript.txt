@@ -1,0 +1,188 @@
+﻿Linguagem de programação baseada em scripts(roda em muitas plataformas(browser, utilizando node.js usamos js no lado servidor,mobile, etc...))
+
+EcmaScript-->padronização da linguagem de script do browser(e a implementação mais conhcida é o javascript)
+
+alert é uma função blocante(com js é interpretado linha a linha e quando encontra funções blocantes ele para na função ate algo ser feito(no caso do alert até o usuario clicar em ok no pop up))
+
+Nas versões anteriores do html ao declarar a tag script é necessario informar o atributo type="text/javascript", mas com a versão atual do html isso não é necessario
+
+Javascript é uma linguagem interpretada, isto é, os scripts são lidos linha a linha e cada instrução é traduzida por um interpretador.
+
+Javascript é a linguagem da web, a única entendida pelo navegador sem a necessidade de instalação de plugins ou algo do tipo. Inclusive hoje atua no lado do servidor devido ao sucesso do Node.js.
+
+O Javascript é o nome de uma implementação do padrão ECMA 262, isto é, quando dizemos que programamos em Javascript, na verdade programamos em ECMASCRIPT. Este padrão historicamente foi criado para resolver os problemas de compatibilidade da linguagem entre navegadores.
+
+---------------------------------------------------------------------------
+javascript é implicitamente tipado
+
+javascript é fracamente tipada(ou dinamicamente tipada)
+	Se eu criar uma variave e passar uma string ele sera uma string mas eu posso passa para esta mesma variave um inteiro e ela se tornara um number dinamicamente
+
+typeof variavel --> a função typeof mostra o tipo da variavel
+
+-----------------------------------------------------------------------------
+
+DOM
+-->é a representação da pagina html em formatdo de objeto javascript
+
+
+DOM é um acrônimo para Document Object Model, basicamente ele é uma representação de uma página html no mundo Javascript e pode ser acessado a partir da variável document, que representa a raiz de nossa página.
+
+var tag = document.getElementById("o id da tag");
+tag.textContent;-->pega o valor da tag
+
+--Se quiser mudar o textContent basta atribuir algum valor a ele
+tag.textContent = "algum valor";
+
+--Criando objetos em js
+
+	var objeto = {
+		      "atributo1" : valor1,
+		       atributo2: valor2
+		      };
+	OBS:as aspas na chave são opcionais
+
+objeto.atributo1;-->retorna o valor1
+
+ou
+
+objeto["atributo1"]
+
+Quando estamos utilizando Javascript, nós não precisamos declarar uma classe para, a partir desta, instanciar um objeto, basta criar um objeto diretamente.
+
+--------------------------------------------------------------
+
+Coleções/array/vetor em JS
+
+var alunos = [1,2,3,4]
+alunos[0]-->para acessar
+alunos.length-->pegar o tamanho
+
+document.getElementsByClassName("")-->retorna um array
+
+-----------------------------------------------------------
+
+Funções em JAVASCRIPT
+-->criando uma função que calcula um IMC e retorna o seu valor
+function calcularImc(paciente){
+	if(paciente.altura != 0){
+		var imc = paciente.peso/(paciente.altura*paciente.altura);
+		return imc;
+	}else{
+		console.log("não executei porque altura eh igual a zero");
+	}
+}
+
+-->Criando um objeto javascript com uma função anonima como atributo(olhe na função o uso da palavra this, significa que os valores que estou utilizando é do proprio objeto)
+	var paciente = {peso    : tdPeso.textContent, 
+				    altura  : tdAltura.textContent,
+					pegaImc: function(){
+								if(this.altura != 0){
+									var imc = this.peso/(this.altura*this.altura);
+									return imc;
+								}else{
+									console.log("não executei porque altura eh igual a zero");
+								}
+								
+--Quando passamos uma função para dentro de outra função nos estamos definindo a função como cidadão de primeira classe que ele pode ser passado como argumento
+							}
+					};
+					
+		paciente.pegaImc() -->desta maneira eu chamo a minha função que esta no objeto	
+
+Função precisa ter um nome para sabermos como chamá-la depois
+Todo código dentro do seu bloco só é executado quando a chamarmos, inclusive a função pode ser chamada quantas vezes quisermos
+Funções são o coração do Javascript, o que lhe dá poder. Aos poucos você aprenderá a fazer mais com funções.
+
+-------------------------------------------------------------------------------
+
+Eventos
+
+Para adicionar um evento em um botão basta adicionar o atributo onclick na tag do botão
+
+Agora para adicionar um evento em um botão via javascript tem que fazer assim:
+	var botao = document.getElementById("calcula-imcs");
+	botao.onclick = calculaTodosImcs;	
+	
+	Obs:Repare que eu chamo a função sem parenteses, pois se eu colocasse os parenteses a função ja seria executada, e como quem vai executar isso é o navegador eu apenas informo a função sem parenteses	
+
+Caso eu queira adicionar mais de uma função em um botão eu tenho que usar o addEventListener:
+
+	var botao = document.getElementById("calcula-imcs");
+	botao.addEventListener("click" , calculaTodosImcs);
+	botao.addEventListener("click" , function(){console.log("calculando imcs")});
+
+
+Além do evento de clique("click"), ainda temos outros que poderemos usar, por exemplo:
+
+-dblclick (clique duplo)
+-mouseover (ao passar o mouse por cima de um elemento)
+-keydown (ao pressionar uma tecla)
+
+Na página do W3Schools tem uma lista completa de todos os eventos. São muitos!
+
+http://www.w3schools.com/jsref/dom_obj_event.asp
+
+PERGUNTA:
+
+var pTexto = document.getElementById("texto");
+
+pTexto.onmouseover = function() {
+    console.log(this.textContent);
+}
+
+pTexto.onmouseover = function() {
+    console.log(this.textContent.toUpperCase());
+}
+Ai vem a pergunta: Quando o usuário passa com o mouse em cima do texto do parágrafo, o console imprime em caixa alta ou baixa?
+	r:Console imprime em caixa alta! Como aprendemos, usando diretamente o atributo do evento no elemento DOM, apenas a última função será executada.
+
+-----------------------------------------------------
+
+event.preventDefault()
+
+
+--Caso eu queira pegar alguma tag mas eu não quero ficar decorando as funções de buscar pelo id ou buscar pela tag eu uso o query selector, eu passo o identificador para ele e ele me traz a tag(seja por classe , id ou a propria tag)
+o querySelector sempre retornará um elemento, mesmo se você tiver o selecionando a partir de uma tag ou uma classe, por tanto, podemos selecionar uma tabela simplesmente passando o seletor table:
+	var tabela = document.querySelector("table");
+	caso eu queira buscar pelo id, coloco um # na frente do identificador
+	var tabela = document.querySelector("#table");
+#id - para buscar pela ID
+.classe - para buscar pela classe
+tagname - para buscar pelo tag
+
+
+Caso eu queira que o querySelecto me retorno um array de elementos eu tenho que fazer assim:
+	var tabela = document.querySelectorAll("table");
+
+O textContent atribui uma string pura no conteudo da tag, caso eu queira escreve um htmol tenho que usar o innerHtml
+todosPacientes.innerHTML = <tag>conteudo html</tag>
+
+-Para não fazer o comportamento padrão de um botao por exemplo(que seria submeter o formulario)
+	Nós não queremos que o botão tenha o comportamento padrão dele, ou seja, queremos prevenir o comportamento padrão, para isso precisamos chamar a função event.preventDefault() no início da função que estamos adicionando no botão:
+
+	var botao = document.querySelector("#adicionar-paciente");
+	botao.addEventListener("click", function(event){
+
+    		event.preventDefault(); // impede comportamento padrão
+
+    		// resto do código de adicionar paciente
+	});
+O parametro event é inserido pelo proprio browser(neste caso o botão não vai mais submeter o formulario)
+
+
+--No exemplo abaixo eu estou pegando o valor de um input text(repare que eu nao uso o innerText para saber seu valor, eu utilizo o value)
+ 
+	var campoNome = document.querySelector("#campo-nome");
+	campoNome.value
+
+
+
+Qual é o atributo que devemos usar para ler o texto que o usuário digitou no campo input?
+
+Devemos usar o atributo value, por exemplo:
+	var campoNome = document.querySelector("#campo-nome");
+	console.log(campoNome.value);
+O mesmo atributo podemos usar também para preencher o input da tela, basta atribuir um valor:
+
+	campoNome.value = "outro valor";

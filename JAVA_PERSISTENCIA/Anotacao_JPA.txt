@@ -1,0 +1,551 @@
+"No mundo OO, objetos não carregam ids de outros objetos, eles possuem um vínculo com o outro objeto inteiro, dessa maneira, um objeto pode ter listas de outros objetos e até estruturas de dados mais complexas, formadas por outras classes." (Trecho do livro Aplicações Java para web com JSF e JPA, Casa do Código)
+Essas diferenças fundamentais do comportamento dos objetos no mundo orientado a objetos e no mundo relacional, é o que chamamos de:
+
+	R:Essa diferença entre o mundo relacional e o mundo orientado a objetos é conhecida como impedância Objeto-Relacional (ou impedance mismatch). O problema é que o paradigma relacional é bem diferente do orientado a objetos. Detalhes que existem em um não existem no outro e isso faz com que seja complexo integrar uma aplicação OO com um banco de dados relacional. Mas isso hoje é abstraído pelos frameworks que mapeiam o mundo OO automaticamente para mundo relacional - os famosos frameworks ORM (Object Relational Mapping).
+	
+Qual a grande desvantagem em trabalhar diretamente com a API JDBC em relação ao JPA?
+
+	R:Trabalhando direto com a API JDBC misturamos dois paradigmas diferentes na aplicação Java, o orientado a objetos e o relacional. Você fica obrigado a fazer os mapeamentos objeto-relacional manualmente, bem como fica preso a linguagem SQL específica do SGDB escolhido.
+	
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	
+Configuração e inicialização do JPA
+
+Qual é o nome da estratégia de responsabilidade para a propriedade hibernate.hbm2ddl.auto no persistence.xml que automaticamente atualiza o banco de dados?
+
+	R:Através da propriedade hibernate.hbm2ddl.auto podemos automaticamente validar e exportar o esquema (schema) DDL (Data Definition Language - Linguagem de Definição de Dados) para o banco de dados quando o EntityManagerFactory é criado. Dentre as possíveis estratégias temos:
+	-validate: valida o esquema mas não faz mudanças no banco de dados.
+	-update: cria e atualiza o esquema no banco de dados preservando dados anteriores.
+	-create: cria o esquema destruindo dados anteriores.
+	-create-drop: remove o esquema no final da sessão.
+	
+As anotações @Entity, @Id e @GeneratedValue servem respectivamente para:
+	R:Associar uma classe a uma tabela - indicar chave primária no banco - permitir que o banco gere automaticamente a chave, opcional.
+	
+	
+precisamos ter o arquivo persistence.xml dentro da pasta src/META-INF
+
+<persistence xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd" version="2.0">
+	<!--  unidade de persistencia com o nome financas  -->
+	<persistence-unit name="financas">
+		<!--  Implementação do JPA, no nosso caso Hibernate  -->
+		<provider>org.hibernate.ejb.HibernatePersistence</provider>
+		<!--  Aqui são listadas todas as entidades  -->
+		<class>br.com.caelum.financas.modelo.Conta</class>
+		<properties>
+			<!--  Propriedades JDBC  -->
+			<property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>
+			<property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost/financas"/>
+			<property name="javax.persistence.jdbc.user" value="root"/>
+			<property name="javax.persistence.jdbc.password" value="admin"/>
+			<!--  Configurações específicas do Hibernate  -->
+			<!--  dialeto que sera usado, neste caso o dialeto do mysql5  -->
+			<property name="hibernate.dialect" value="org.hibernate.dialect.MySQL5InnoDBDialect"/>
+			<!--  atualiza a tabela mantendo os dados anteriores  -->
+			<property name="hibernate.hbm2ddl.auto" value="update"/>
+			<!--  mostra formatado o sql gerado pelo hibernate  -->
+			<property name="hibernate.show_sql" value="true"/>
+			<property name="hibernate.format_sql" value="true"/>
+		</properties>
+	</persistence-unit>
+</persistence>
+
+
+//Classe que cria um entityManager
+public class JPAUtil {
+	//Cria um entityManger com base na unidade de persistencia denominada financas
+	private static EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("financas");
+
+	public EntityManager getEntityManager() {
+		return entityManagerFactory.createEntityManager();
+	}
+}
+
+//classe de teste
+	public static void main(String[] args) {
+		double inicio = System.currentTimeMillis();
+
+		Conta conta = new Conta();
+		conta.setTitular("Maria dos Santos");
+		conta.setBanco("Caixa");
+		conta.setAgencia("043");
+		conta.setNumero("54321");
+
+
+		EntityManager em = new JPAUtil().getEntityManager();
+		em.getTransaction().begin();
+
+		em.persist(conta);
+
+		em.getTransaction().commit();
+		em.close();
+
+		double fim = System.currentTimeMillis();
+		System.out.println("Executado em: " + (fim - inicio) / 1000 + "s");
+	}
+	
+//classe mapeada
+
+@Entity
+//Caso estivessemos usando Oracle ou postgree poderiamos usar este sequence
+//@SequenceGenerator(name = "SEQ_CONTAS", sequenceName = "SEQ_CONTAS", initialValue = 1)
+public class Conta {
+	
+	@Id 
+	//Caso estivessemos usando Oracle ou postgree poderiamos usar este sequence
+	//@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CONTAS")
+	@GeneratedValue(strategy=GenerationType.IDENTITY)
+	private Integer id;
+	
+	private String titular;
+	private String numero;
+	private String banco;
+	private String agencia;
+	
+	public Integer getId() {
+		return id;
+	}
+	public void setId(Integer id) {
+		this.id = id;
+	}
+	public String getTitular() {
+		return titular;
+	}
+	public void setTitular(String titular) {
+		this.titular = titular;
+	}
+	public String getNumero() {
+		return numero;
+	}
+	public void setNumero(String numero) {
+		this.numero = numero;
+	}
+	public String getBanco() {
+		return banco;
+	}
+	public void setBanco(String banco) {
+		this.banco = banco;
+	}
+	public String getAgencia() {
+		return agencia;
+	}
+	public void setAgencia(String agencia) {
+		this.agencia = agencia;
+	}
+}
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ESTADOS JPA
+
+Dentro do ciclo de vida de um objeto na JPA, qual estado garante que todas as modificações feitas no objeto serão sincronizadas com o banco de dados?
+	
+	R:O estado Managed (ou Gerenciado) garante que todas as alterações feitas no objeto (Entity) serão propagadas para o banco de dados, mantendo sempre a entidade consistente tanto em memória, quanto no banco.
+	
+De que forma um objeto no estado Detached (Desatachado) pode voltar para o estado Managed (Gerenciado)?
+
+	R:Para fazer com que um objeto Detached volte a ser Managed, devemos usar o método merge() do EntityManager.
+	
+O método find() e o getReference() da interface EntityManager permitem que:
+
+	R:O método find() e o getReference() da interface EntityManager permitem que recuperemos uma instância de uma entidade no banco de dados através do seu id. Após isso eles a retornam como Managed.
+	
+
+Dado o trecho de código abaixo, diga qual é o estado do objeto neste momento:
+	...
+	Conta conta = new Conta();
+	conta.setId(3);     // Conta com Id 3 já foi persistida anteriormente.
+	conta.setTitular("Mario Santos");
+	conta.setBanco("Itau");
+	conta.setNumero("54321");
+	conta.setAgencia("3344");
+	...
+
+	R:O JPA chama esse estado de Detached ou desatachado, pois a entidade já foi Managed um vez. Assim sendo, ela já possui uma representação com a referida chave primária no banco de dados.
+	
+Por quanto tempo dura o estado Managed de um objeto no JPA?
+
+	R:O estado Managed ou Gerenciado dura enquanto o EntityManager estiver aberta, mantendo o sincronismo da entidade em memória com o banco de dados.
+	
+
+//ALGUNS EXEMPLOS DE GERENCIAMENTO DE ESTADOS
+
+public class TesteEstadosJPA {
+
+  public static void main(String[] args) {
+
+		EntityManager manager = new JPAUtil().getEntityManager();
+		
+		
+		manager.getTransaction().begin();
+
+		//Aqui este objeto esta no estado managed, isso garante que assim que eu der um commit o estado do meu objeto sera refletido no banco
+		//caso eu mude qualquer atributo , ao fazer commit ele ira dar um update na tabela
+		Conta conta = manager.find(Conta.class, 15);
+		
+		System.out.println(conta.getTitular());
+		
+		//pelo fato do meu objeto estar no estado managed , qualquer alteração feita nele ira ser refletida no banco, ao commitar a transacao(sera feita um update no titular da conta), este objeto fica na memoria ate eu fechar meu entityManager
+		conta.setTitular("Luiz Ferreira");
+		
+		System.out.println(conta.getTitular());
+		
+		manager.getTransaction().commit();
+
+		manager.close();
+
+	}
+  
+  //Repare que a conta foi alterada mesmo sem a chamada do método persist(). Por quê?
+  //  O método find() do EntityManager retorna uma entidade gerenciada por ele, sendo assim, estando dentro de uma transação ativa, qualquer alteração feita é monitorada e aplicada no banco de dados no final da transação. Isso acontece por causa do estado " managed " da entidade.
+}
+
+//MAIS UM EXEMPLO
+
+
+public class TesteGerenciamentoJPA {
+	public static void main(String[] args) {
+		EntityManager manager = new JPAUtil().getEntityManager();
+
+		manager.getTransaction().begin();
+
+		Conta conta = manager.find(Conta.class, 15);
+
+		// commit antes da alteração
+		manager.getTransaction().commit();
+
+		// Alteração do titular da conta, esta alteração não sera refletida pois eu ja fechei a transação e este objeto acaba de 
+		//ir para o estado desatachado (detached), pois a entidade já foi Managed um vez, logo existe uma representação da mesma no banco, agora para eu passar 
+		//do estado de (detached) para managed, tenho que iniciar uma nova transacao e efetuar um merge como o exemplo abaixo e depois commitar a transacao
+		conta.setTitular("Caelum ensino e inovação");
+		
+		manager.getTransaction().begin();
+		
+		manager.merge(conta);
+		
+		manager.getTransaction().commit();
+
+		manager.close();
+	}
+}
+
+https://s3.amazonaws.com/caelum-online-public/JPA/jpa-cap3-estados2.png
+
+
+
+OBS: se tentarmos remover um objeto que não esteja no estado managed o JPA ira lançar uma exeção
+
+	Ex:	Conta conta = new Conta();
+		conta.setId(3);
+		// outros setters
+
+		EntityManager em = new JPAUtil().getEntityManager();
+		em.getTransaction().begin();
+
+		em.remove(conta);
+
+		em.getTransaction().commit();
+		em.close();
+		
+		-->Esta conta esta no estado desatachado logo não podera ser removido, para que isso possa ser possivel vamos mudar o estado dele
+		   Então vamos carregar a conta antes com o método find() e depois vamos deletá-la.
+		   
+Logo após a chamada de remove(), o objeto não tem mais representação no banco, já que foi removido. Porém, o objeto continua existindo na memória, em um estado conhecido como Removed.
+	
+https://s3.amazonaws.com/caelum-online-public/JPA/jpa-cap3-removed.png
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+MAPEAMENTO E RELACIONAMENTO ENTRE CLASSES
+
+Na classe Movimentacao, qual anotação devemos usar para que o atributo tipoMovimentacao, que é um Enum, seja persistido como String no banco de dados.
+
+	R:ENFCIMA DO ATRIBUTO ENUM BASTA COLOCAR A ANOTAÇÃO @Enumerated(EnumType.STRING) -->DIZ QUE ESTE ENUM SERA GRAVADO COMO VARCHAR NO BANCO
+		Já se quiséssemos salvar como um número inteiro, bastaria colocar @Enumerated(EnumType.ORDINAL)
+	
+
+Quando trabalhamos com uma movimentação normalmente temos que identificar o dia que ela ocorreu. Para isso na nossa classe declaramos um atributo Calendar, cujo nome é data.
+COMO devemos seguir para que essa data seja persistida no banco sem os valores de horas.
+	R:Para que o JPA persista a nossa data de movimentação somente com as informações da data, ou seja, descartando as informações de horários, é necessário usar a anotação @Temporal(TemporalType.DATE) no nosso atributo.
+		DATE -- SÓ A DATA
+		TIME -- SÓ A HORA
+		TIMESTAMP -- DATA E HORA
+
+Na nossa classe Movimentacao temos um atributo do tipo Conta, justamente para a associação entre as entidades. Nesse caso, uma movimentação só pode estar associada a uma conta, mas uma conta pode ter muitas movimentações.
+Em JPA como anotamos esse tipo de relacionamento?
+	R:Como no nosso projeto teremos varias movimentações associadas a uma conta. Precisamos indicar isso no atributo conta da classe Movimentacao pela anotação @ManyToOne.
+	
+
+	
+Ex do mapeamento da classe movimentação que tem vinculo com a classe conta
+
+@Entity
+public class Movimentacao {
+	@Id
+	@GeneratedValue(strategy=GenerationType.IDENTITY)
+	private Integer id;
+
+	private BigDecimal valor;
+
+	@Enumerated(EnumType.STRING)
+	private TipoMovimentacao tipoMovimentacao;
+
+	@Temporal(TemporalType.DATE)
+	private Calendar data;
+
+	private String descricao;
+
+	@ManyToOne
+	private Conta conta;
+
+	/*getters e setter omitidos*/
+
+}
+
+e persistindo o mesmo
+
+	public static void main(String[] args) {
+		double inicio = System.currentTimeMillis();
+
+		Conta conta = new Conta();
+		conta.setTitular("Maria dos Santos");
+		conta.setBanco("Caixa");
+		conta.setAgencia("043");
+		conta.setNumero("54321");
+
+		Movimentacao movimentacao = new Movimentacao();
+        movimentacao.setData(Calendar.getInstance());
+        movimentacao.setDescricao("Conta de Luz");
+        movimentacao.setTipoMovimentacao(TipoMovimentacao.SAIDA);
+        movimentacao.setValor(new BigDecimal("123.9"));
+        movimentacao.setConta(conta);
+
+		EntityManager em = new JPAUtil().getEntityManager();
+		em.getTransaction().begin();
+
+		//para persistir a movimentação precisamos primeiramente persistir a conta, pois a mesma esta no estado transiente e caso eu queira persisti a movimentação
+		//sem persistir a conta antes o HIBERNATE ira lançar uma exceção
+		em.persist(conta);
+		em.persist(movimentacao);
+
+		em.getTransaction().commit();
+		em.close();
+
+		double fim = System.currentTimeMillis();
+		System.out.println("Executado em: " + (fim - inicio) / 1000 + "s");
+	}
+	
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ PESQUISAS ORIENTADO A OBJETOS COM JPQL
+	
+O JPQL é uma linguagem de consulta, assim como o SQL. Porém, orientada a objetos. Isso significa que:
+		R:Quando estivermos pesquisando dados, não consideramos nomes de tabelas ou colunas, e sim entidades e seus atributos.
+		
+Como vimos no vídeo, baseado no createQuery(..) do EntityManager, passando para ele um código do JPQL, temos como retorno da operação um objeto do tipo:
+	R:O método createQuery(...) devolve um objeto do tipo javax.persistence.Query.
+	
+
+O grande problema do Positional Parameter Notation é que:
+	R:Apesar de evitar o problema de injeção de código no JPQL pois não estamos concatenando Strings, os Positional Parameter Notation tem a desvantagem de, na presença de muitos parâmetros, fica fácil confundir-se com os números.
+	
+Com a Named Parameter Notation:
+	R: Fica mais fácil identificar os parâmetros, diminuindo a probabilidade de se cometer erros.
+	
+Como buscar todas as movimentações de saida? Qual é o JPQL correto?
+	R:select m from Movimentacao m where m.tipoMovimentacao='SAIDA'
+	
+Agora queremos buscar todos os gastos do titular de uma conta. Ou seja, dado um nome de um titular queremos receber todas as movimentações de SAIDA.
+	R: select m from Movimentacao m where m.conta.titular like :pTitular and m.tipoMovimentacao = 'SAIDA'
+	
+Exemplo de consulta com jpql
+
+	public static void main(String[] args) {
+		EntityManager manager = new JPAUtil().getEntityManager();
+
+		Conta conta = new Conta();
+		conta.setId(1);
+
+		//Query passando parametros por meio de concatenação
+		//Query query = manager.createQuery("select m from Movimentacao m where m.conta.id=" + conta.getId());
+
+		//query passando parametro com --> Positional Parameter Notation
+		//Query query = manager.createQuery("select m from Movimentacao m where m.conta=?1 and m.tipoMovimentacao=?2");
+		//query.setParameter(1, conta);
+		//query.setParameter(2, TipoMovimentacao.ENTRADA);
+
+		//query passando parametro com --> Named Parameter Notation
+		Query query = manager.createQuery("select m from Movimentacao m where m.conta = :pConta and m.tipoMovimentacao = :pTipo order by m.valor desc");
+
+        query.setParameter("pConta", conta);
+        query.setParameter("pTipo", TipoMovimentacao.ENTRADA);
+		List<Movimentacao> movimentacoes = query.getResultList();
+
+		for (Movimentacao movimentacao : movimentacoes) {
+			System.out.println("\nDescricao ..: " + movimentacao.getDescricao());
+			System.out.println("Valor ......: R$ " + movimentacao.getValor());
+		}
+
+		manager.close();
+	}
+	
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+RELACIONAMENTO BIDIRECIONAL
+
+Qual é o JPQL que busca todas as movimentações de uma conta?
+	R:select m from Movimentacao m where m.conta = :pConta
+
+Qual é a anotação que define um relacionamento um-para-muitos?
+	R:@OneToMany
+	
+	Em geral, o JPA define 4 anotações de cardenalidade:
+	@ManyToOne - para um relacionamento muitos-para-um 
+	@OneToMany - para um relacionamento um-para-muitos 
+	@ManyToMany - para um relacionamento muitos-para-muitos 
+	@OneToOne - para um relacionamento um-para-um
+	
+
+Dado o seguinte relacionamento:
+
+@Entity
+public class Conta {
+
+    @OneToMany
+    private List<Movimentacao> movimentacoes;
+
+Qual é o impacto do mapeamento @OneToMany no modelo relacional?
+	R:Para o JPA este relacionamento é novo e deve ser apresentado no banco de dados. A cardinalidade é um-para-muitos (OneToMany) e o Hibernate gerará automaticamente uma tabela auxiliar. Essa tabela possui duas chaves estrangeiras, uma da tabela Conta e outra da tabela Movimentacao.
+	
+	
+	
+Dado o seguinte relacionamento:
+@OneToMany
+private List<Movimentacao> movimentacoes;
+
+Como definir que se trata de um relacionamento bidirecional?
+	R:	A anotação @OneToMany possui um atributo mappedBy. Através dele é definido o relacionamento bidirecional.
+		O mappedBy recebe o nome do atributo que representa o lado forte do relacionamento bidirecional. O lado forte é o dono do relacionamento e causa a alteração no modelo relacional.
+
+		Observe o exemplo abaixo:
+
+		@OneToMany(mappedBy="conta")
+		private List<Movimentacao> movimentacoes;
+	
+		Como se trata de uma lista de movimentações, sabemos que a classe Movimentacao possui um atributo com o nome conta que é o dono do relacionamento.
+
+		O lado do relacionamento que usa mappedBy também se chama o lado inverso ou lado fraco. O lado fraco não tem um impacto no banco de dados, é um detalhe da modelagem OO.
+		
+Observe o relacionamento bidirecional abaixo:
+@Entity
+public class Aluno {
+
+    @OneToOne
+    private Perfil perfil;
+}
+@Entity
+public class Perfil {
+
+    @OneToOne(mappedBy="perfil")
+    private Aluno aluno;
+}
+
+Qual é o lado forte?
+	R:O atributo perfil na classe Aluno representa o lado forte. Este atributo causa a criação da chave estrangeira no banco de dados.
+	O atributo aluno na classe Perfil é o lado fraco.
+	
+
+Qualquer relacionamento para-muitos (*ToMany) é LAZY por padrão. Isso significa que só será inicializado ao accessar o atributo (sob demanda), mas precisa de um EntityManager aberto.
+Como vimos no video, através do JPQL podemos antecipar o carregamento de um relacionamento LAZY.
+
+
+EX: DE CLASSE USANDO AQUI CARREGAMENTO EAGER E LAZY(LAZY É O PADRÃO)
+
+	public static void main(String[] args) {
+		EntityManager manager = new JPAUtil().getEntityManager();
+		
+		/*Foram dois selects. Repare que diferentemente do relacionamento @ManyToOne não é feito um join e sim um segundo select!
+		O primeiro select para buscar a conta pela id:
+		O segundo select para buscar as movimentações da conta.*/
+		//Conta conta = manager.find(Conta.class, 1);
+		
+		//Este join fetch na query faz com que a consulta tenha um carregamento do tipo eager e não lazy, logo ele carrega as informações de uma vez
+		//quando carregamos com lazy temos o problema do n+1
+		Query query = manager.createQuery("select c from Conta c join fetch c.movimentacoes where c.id = :pId");
+		query.setParameter("pId", 1);
+		Conta conta = (Conta) query.getSingleResult();
+		
+		manager.close();
+		
+		System.out.println(conta.getMovimentacoes().size());
+		
+		
+	}
+	
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Melhorando e organizando as queries
+
+
+Como se chama o método da interface javax.persistence.Query que devolve um único valor?
+	R: getSingleResult()
+	
+
+De acordo com o vídeo, para recuperar uma lista de movimentações de uma conta sendo ENTRADA ou SAIDA, devemos:
+	R:String jpql = "select m from Movimentacao m where m.conta=:pConta and m.tipoMovimentacao=:pTipo";
+
+
+No treinamento já usamos o objeto do tipo javax.persistence.Query para definir e executar pesquisas.
+Também podemos usar a sua versão tipada que é:
+	R:TypedQuery<BigDecimal> query = em.createQuery(jpql, BigDecimal.class);
+	
+
+	
+Queremos saber o valor médio dos gastos de uma conta.
+Logo, observe o código abaixo:
+
+	String jpql = "select avg(m.valor) from Movimentacao m where m.conta=:pConta "
+					+ "and m.tipoMovimentacao=:pTipo";
+
+	TypedQuery<OUTROTIPO> query = manager.createQuery(jpql, OUTROTIPO.class);
+
+	query.setParameter("pConta", conta);
+	query.setParameter("pTipo", TipoMovimentacao.SAIDA);
+
+	OUTROTIPO resultado = query.getSingleResult();
+	Para que a consulta com avg funcione, precisaríamos:
+
+	R:Na realidade, a função avg retorna um objeto do tipo Double. Logo, precisaríamos substituir "OUTROTIPO" por Double para a consulta funcionar.
+	
+
+
+
+	
+Observe o código abaixo:
+package br.com.caelum.financas.modelo;
+
+	@NamedQuery(name="mediaDaContaPeloTipoMovimentacao", 
+		query="select avg(m.valor) from Movimentacao m where m.conta=:pConta "
+				+ " and m.tipoMovimentacao = :pTipo")
+
+	@Entity
+	public class Movimentacao {
+
+		// trecho omitido
+
+	}
+	
+	
+De acordo com o vídeo, ao fazermos uso da anotação @NamedQuery:
+
+	R:Poderíamos utilizar o método createNamedQuery, no lugar de createQuery E este, ao invés de receber o JPQL, receberia somente seu nome.
+	TypedQuery<Double> query = manager.createNamedQuery("mediaDaContaPeloTipoMovimentacao", Double.class);
+	
+	Uma vantagem é que as Named Queries são verificadas quando o JPA carrega a entidade. Então, se fizermos mudanças no nosso modelo e esquecermos de alterar a query, receberemos uma exceção antecipadamente.
+	
+	
+	
+VANTAGENS DO NAMEDQUERIES
+As NamedQueries são lidas quando o JPA inicia, ou seja quando a aplicação sobe. Assim já percebemos qualquer erro de sintaxe no JPQL desde o início. Além disso, há um pequeno ganho no desempenho, pois as queries já foram analisadas.
+Tente uma vez e gere um erro de sintaxe propositalmente. Abra a classe Movimentacao e crie um erro, por exemplo, escreva from movimentacao. Depois execute qualquer teste e repare que JPA já gera uma exceção ao subir.
+
+Como desvantagem podemos mencionar que as queries poluem as entidades e dificultam a leitura e entendimento do DAO, já que o JPQL e a execução do mesmo estão separados.
+
+A diferença entre find() e getReference() é que o getReference() é Lazy.

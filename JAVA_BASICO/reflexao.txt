@@ -1,0 +1,127 @@
+Com reflexao é possivel criar um algoritimo que consegue obter e trabalhar com elementos do proprio codigo
+
+Reflexao é o processo pelo qual um software pode observar e modificar a sua propria estrutura e comportamento
+
+//na verdade a reflexão do java é introspecção pois com reflexão conseguimos mudar as classes dinamicamente, mas //no java nos conseguimos apenas obter informações sobre a classe
+
+introspecção é o subconjunto da reflexão que permite com que o software obtenha informações a respeito de si proprio
+
+Um cenário indicado para o uso de reflexão, quando é necessário lidar com objetos de classes diferentes que não compartilham a mesma interface.
+
+Não é possivel fazer fazer uma modificação de uma classe existente.
+
+------------------------------------------------------------------------------------
+
+OBTENDO CLASSE
+
+Class clazz = String.class; -->pegando a classe atraves de uma referencia estatica
+OU
+Class clazz = obj.getClass() -->pegando a classe atraves de uma referencia
+ou
+Class clazz = Class.forName("java.lang.String");-->se não tiver a classe carregada ele ja carrega
+
+
+TODAS AS INFORMAÇÕES DE UMA CLASSE PODEM SER RECUPERADAS POR REFLEXAO
+Ex:qual sua super classe,interfaces,atributos etc
+
+-->verifica se é a propria classe ou uma implementação da mesma
+clazz.isAssignableFrom(outra classe);
+
+ou seja se eu quiser saber se uma classe é implementação de uma super classe ou interface basta fazer
+interface.isAssignableFrom(implementação);
+
+class.isInterface() -->verifica se é uma interface
+
+
+A Expressão Class.forName(String name).newInstance() não retorna uma instância de Class, e sim um objeto que foi determinado, exemplo : Aluno aluno = (Aluno)Class.forName("br.com.model.Aluno").newInstance();
+
+---------------------------------------------------------------------------------------------
+
+Criando Objetos
+
+newObj = clazz.newInstance(); -->criando um objeto
+
+Constructor constr = clazz.getConstructor(String.class);
+
+newObt = constr.newIntance("param");
+
+---------------------------------------
+Um objeto do qual nao se conhece a classe,precisa ser manipulado com reflexao
+-----------------------------------------
+
+Acessando atributos
+
+-são nos atributos que estão as informações das classes
+
+-Recupera todos os atributos publicos
+Field f = c.getField(nome);
+Field[] fs = c.getFields();-->retorna todos os atributos publicos
+
+
+---Esses metodos recuperam somente o que esta declarado na classe
+-inclui atributos privados
+-NÃO inclui atributos da superclasse
+
+	Field f = c.getDeclaredField(nome);
+	Field[] f = c.getDeclaredFields();
+
+--setar valor
+field.set(v);
+--recuperar valor
+field.get();
+
+é possivel habilitar o acesso a atributos privados,porem eles ficam acessiveis somente por reflexao:
+
+field.setAccessible(true);
+
+securityManager pode bloquear------------->pesquisar sobre securityManager
+
+Quais atributos são retornados no método getDeclaredFields()??
+	R:Todos os declarados na classe independente de seus modificadores de acesso
+
+O que ocorre ao chamarmos setAccessible(true) na classe Field relativa a um atributo privado:
+	R:O atributo fica acessível apenas via reflexão e seu acesso pode ser bloqueado por um SecurityManager
+
+-------------------------------------------------------------------------------------
+
+Executando metodos
+
+Method[] ms = m.getMethods();->retornar todos os metodos publicos
+Method[] ms = m.getDeclaredMethods();->vai retornar todos metodos(não importa o seu modificador mas NÃO inclui metodos da superclasse)
+
+c.getMethod("nome" , String.class,int.class)-->nome do metodo e parametro que o mesmo solicita
+
+Para selecionar metodos pos algum outro criterio, voce precisa pegar todos e verificar se cada um tem a propriedade desejada
+
+Para invocar um metodo
+
+value= m.invoke(obj , param1,param2)-->primeiro parametro é o objeto que sera invocado este metodos e os demais são valores de parametros
+
+Quais métodos são retornados no método getMethods() ??
+	R:Ele retorna somente métodos com o acesso público.
+
+Quais as informações necessárias para recuperar um método específico?
+	R:Para recuperar as informações de um método específico é necessário Nome e tipo dos parâmetros.
+
+-----------------------------------------------------------------------------------------
+
+Lidando com Exceções
+
+Existem erros que normalmente só ocorrem em tempo de compilação , que em reflexão podem ocorrer em tempo de execução
+
+--Não conseguiu encontrar um determinado metodo ou atributo
+NoSuchFieldException
+NoSuchMethodException
+
+--Os parametros passados não são compativeis com o do método
+IllegalArgumentException
+
+--Não se possui permissão para realizar aquele acesso
+IllegalAccessException()
+
+--Encapsula o erro quando uma exceção é lançado pelo metodo ou construtor invocado
+InvocationTargetException
+	.E para pegar a exceção original gerada pelo metodo 
+		ex.getTargetException()
+
+

@@ -1,0 +1,53 @@
+REVISAO
+
+Quais são as características comuns no desenvolvimento RAD (Rapid Application Development) e que também podem ser encontradas no desenvolvimento com JavaServer Faces?
+	R:Componentes ricos, orientado ao evento e mantém o estado dos componentes (stateful).
+	  São as boas práticas do mundo orientado a objetos que o JSF tenta trazer para o mundo Web:
+		uso de componentes
+		desenvolvimento orientado ao evento
+		desenvolvimento que mantém o estado entre requisições (statefull)
+		
+Os componentes definidos na página xhtml serão instanciados pelo controlador padrão do JSF. O resultado disso é a árvore de componentes que fica guardada em memória. Em que momento o controlador cria esta árvore?
+	R:Resposta correta: Apenas na primeira requisição (no primeiro HTTP GET).
+		O controlador instancia os componentes apenas na primeira requisição (no primeiro HTTP GET) desse usuário. A partir dai todos os componentes dessa tela já ficam guardados em memória dentro da árvore de componentes.
+		
+		
+Existem alguns escopos predefinidos no JSF:
+
+	RequestScoped - vive durante uma requisição
+	ViewScoped - vive enquanto acessa mesma pagina, enquanto a tela existe
+	SessionScoped - vive o tempo que durar a sessão do usuário
+	ApplicationScoped - vive pela aplicação toda
+	
+	
+Veja o método form abaixo que está dentro de um bean gerenciado pelo JSF com o nome AutorBean:
+    public String form() {
+        return "produto";
+    }
+e um comando na página xhtml:
+
+<h:commandButton value="Navegue" action="#{autorBean.form}" />
+O que podemos dizer sobre a navegação?
+		
+		R:Após executar o método form é feito um redirecionamento server-side para a página produto.xhtml.
+		  para redirecinar no lado cliente deveria fazer assim:  return "produto?faces-redirect=true";
+		
+JSF usa fases bem definidas que são executadas em cada requisição. O que acontece na terceira fase que se chama de PROCESS_VALIDATION?
+	R:Na terceira fase acontece a conversão, se for preciso, e a validação.https://s3.amazonaws.com/caelum-online-public/jsf-primefaces/img/01/fases-jsf.png
+	
+	
+Veja o pedaço de código xhtml:
+<h:commandButton value="Gravar" action="#{livroBean.gravar}"  />
+O método gravar do livroBean associado com o comando em cima é executado em qual fase?
+	R:Os comandos serão executados na quinta fase INVOKE_APPLICATION. a não ser que o atributo immediate seja setado como true, neste caso o método gravar é chamado na segunda fase, APPLY_REQUEST_VALUES.
+	
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	
+
+COMPONENTES RICOS
+
+
+podemos usar f:attribute invés de f:passThroughAttribute
+como aplicar um REGEX pelo componente f:validateRegex
+Primefaces usa jQuery por baixo dos panos
+Como utilizar o p:dataList
+Podemos usar o icones do jQuery ou FontAwesome

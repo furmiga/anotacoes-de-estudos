@@ -1,0 +1,85 @@
+As interfaces Connection,ResultSet e Statement herdam da classe AutoCloseable
+	-Por isso que elas podem ser declaradas dentro do try e fechadas automaticamento(try with resource do java 7)
+
+-----------------------------------------------------------------------------------------------------------------
+Statement
+O principal problema de usar statement está ligado com o SQL Injection: os usuários podem quebrar nossas queries e atacar nosso sistema caso eles escrevam valores específicos em nossos campos e não tratemos eles.
+Outro problema é de performance: um preparedstatement permite execução de inserts ou updates em batch.
+
+------------------------------------------------------------------------------------------------------------------------
+PreparedStatement
+
+Caso eu queira pegar o codigo que foi gerado automaticamente apos um insert basta fazer assim:
+	PreparedStatement stmt = connection.prepareStatement(sql , Statement.RETURN_GENERATED_KEYS);
+	
+	ResultSet rst= stmt.getGeneratedKeys();
+	while(rst.next()){
+		System.out.println("ID: " + rst.getString("id"));
+	}
+
+um prepared statement permite execução de inserts ou updates em batch e tem uma performance melhor que o statement.
+
+OBS:VER PQ ESTA DANDO ERRO PARA PEGAR A CHAVE GERADA
+
+
+
+---------------------------------------------------------------------------------------------------------------------------
+Pegar o habito de criar minhas conexoes,ResultSets , preparedStatements , criação de arquivo etc..dentro do try(){},pois ele automaticamente fecha esses recursos de maneira elegante ao final de sua execução
+	EX: try (Connection connection = DataBase.getConnection()) {}
+
+Caso eu queira utilizar o metodo rolback eu tenh que setar o autoCommit da connection como false , e comitar manualmente
+	try (Connection connection = DataBase.getConnection()) {
+			connection.setAutoCommit(false);
+			String sql = "insert into produto (nome, descricao) values (? , ?)";
+			try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+				adiciona("TV LCD", "32 polegadas", stmt);
+				adiciona("Blueray", "Full HDMI", stmt);
+				connection.commit();
+			}catch(Exception e){
+				e.printStackTrace();
+				connection.rollback();
+				System.out.println("rollback efetuado");
+			}
+
+		}
+
+---------------------------------------------------------------------------------------------------------------------------
+
+Estudar mais sobre como fazer um pool de conexão com o driver do mySql***********
+
+Posso fazer um pool de conexões que deixam um certo numero de conexões abertas,e disponibilizam as mesmas aos usuario que solicitarem
+Ex:
+		private DataSource dataSource;
+		
+		
+		MysqlConnectionPoolDataSource pool = new MysqlConnectionPoolDataSource();
+		pool.setURL("jdbc:mysql://localhost:3306/loja_virtual");
+		pool.setUser("root");
+		pool.setPassword("admin");
+		this.dataSource = pool;
+
+		 dataSource.getConnection();
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------------
+DAO
+
+A vantagem está ligada com a capacidade de isolar todo o código que acessa seu repositório de dados em um único lugar. Qualquer desenvolvedor sabe que quando for necessário trabalhar com tal camada, existe um único lugar para olhar: seus DAOs.
+
+Sempre que fizer um DAO faça com que ele receba a conexão pelo contrutor,pois isso traz alguns beneficios,abaixo tem uma explicação sobre isso:
+	Um problema grave ocorre quando tentarmos utilizar transações. Como cada um dos DAOs possui uma conexão distinta, eles não estarão envolvidos na mesma transação e ficamos incapazes de utilizar tal recurso.
+Outro problema é que abrimos um número grande de conexões para a execução de cada tarefa: se ela precisa de 2 daos, serão 2 conexões.
+
+---------------------------------------------------------------------------------------------------------------------------
+
+Com o JDBC temos o controle "fino" sobre nossas ações(podemos controlar tudo, des de a criação da conexão ate quando iremos de fato commitar uma transação)
+
+O problema do N+1
+
+Existem problemas quando temos por exemplo que efetuar uma query e dependendo do retorno desta query(N) teremos que fazer mais N querie
+	Ex:Consultei uma categoria e eu quero os produtos de cada categoria logo se me retorna 5 categorias eu terei que fazer mais 5 queries para buscar os produtos de cada categoria retornada , tendo assim um total de 6 queries.
+Para solucionar estes problemas, podemos trazer tudo ja na querie utilizando joins
+

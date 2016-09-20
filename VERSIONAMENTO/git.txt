@@ -1,0 +1,57 @@
+- Pensando nesse problema foram criadas ferramentas de controle de versão, e esse curso apresentará uma das mais utilizadas hoje em dia, o Git
+
+- Uma grande vantagem do Git é a existência de ferramentas comerciais de hospedagem de código na Web. A maior provedora de hospedagem de repositórios Git, abertos ou privados, hoje é o Github
+
+- site para download do git https://git-for-windows.github.io/
+
+- Depois de criada nossa conta no github, precisamos gerar uma senha (chave de segurança) que será responsável por identificar nossa máquina quando fizermos as interações entre nosso projeto e o serviço do Github. Caso não exista essa configuração entre nossa máquina e a conta do Github, o acesso ao serviço pelos comandos do Git será negado.  
+
+- O processo de criação da chave de segurança é similar em todos os sistemas operacionais: basta abrir o prompt de comando (no caso do Windows, é necessário abrir o Git Bash) e inserir o seguinte comando:
+
+	ssh-keygen -t rsa -C "seu_email@provedor.com"
+
+- Agora será necessário realizar o login no http://github.com e seguir para as configurações do seu perfil. Siga "Settings", "SSH and GPG keys" e "New SSH key".Insira na caixa de texto o conteúdo do seu arquivo id_rsa.pub
+
+- COMANDO CLONE ->  Para garantir que vamos adquirir todos os arquivos necessários, utilizaremos o comando git clone que, além de copiar os arquivos do projeto, traz todos os arquivos necessários para que o controle de versão dos arquivos continue sendo feito.
+
+ -> git clone git://github.com/jcfonsecagit/repositorio.git sera clonado o projeto para a pasta que se encontra atualmento no cmd
+
+-m determinado momento do projeto, é possível marcar o estado atual do repositório como a versão 1.0. Esse processo de adicionar um marcador, que habitualmente é o número da versão, é chamado de tag
+para ver a versões do seu projeto basta entrar no seu repositorio e digitar "git tag" e ele ira listar todas as versões do projeto
+
+-para poder voltar para uma versão especifica basta usar o comando "git checkout v0.1"(no cao v0.1 voce adpta para o nome da versão que deseja)
+
+-caso queiramos saber o que mudou de uma versão para outra basta usar o comando "git diff v0.1 v0.2" (coloca o nome das duas versões a serem comparadas)
+
+-O Git nos fornece uma funcionalidade onde podemos consultar quem foi o autor de cada linha de um arquivo através do comando git blame: git blame index.html
+
+-Qual a diferença de GIT E GITHUB
+	R:O github é um serviço que provê através de diversos planos (pagos e não pagos) a possibilidade de hospedar o repositório para nós. Enquanto o Git é o software com o qual podemos manipular os arquivos que estarão no repositório, que pode ser o github.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Ciclo de vida GIT
+
+-para fazer com que uma pasta comece a ser gerenciada pelo git basta navegar ate ela e executar o comando "git init"
+-git status mostra o status dos seus arquivos(se estão sendo gerenciados pelo git ou não, se foram modificados ou não, etc...)
+-git ls-files lista todos os arquivos que o git esta gerenciando do seu repositorio(todos que ele esta gerenciando e não todos que estão na pasta, pois pode ter arquivos na pasta que não estão sendo gerenciados pelo git)
+-git add nomeDoArquivo.extencao adiciona o arquivo para o git comecar a gerenciar(logo se eu criar uma index.html e quero que por exemplo ele comite as alteraçoes deste arquivo eu faço git add index.html(e depois dou um comite))
+-git commit -m "mesagem que ficara gravada na alteração" --comito as alterações no git
+
+ fizemos o controle local do nosso projeto. Isso permite que possamos trabalhar em um projeto mesmo sem ter acesso à rede ou à internet pois essas alterações podem ser aplicadas mais tarde ao repositório "central".
+ 
+Quais são os três estados de um repositório com os quais interagimos ao realizar o fluxo de controle com o Git?
+	R:Os três estados de um repositório são "Working Directory", que são os arquivos que temos em nosso repositório e podemos modificá-los, "Index" ou "Staging Area", que é uma visão preliminar das modificações em nossos arquivos que queremos definir como um novo passo do projeto, e "HEAD", que é um passo completo de nosso trabalho, usado como referência para a comparação com nosso "Working Directory".
+	
+--outros exemplos do uso do git add
+	É possível passar mais de um arquivo como parâmetro para o comando git add, basta separá-los por um espaço em branco, no mesmo comando. Além disso é possível adicionar todos os arquivos da pasta atual, com git add ..
+O parâmetro também pode ser uma operação de busca de arquivos comum, por exemplo, para adicionar todos os arquivos com a extensão "txt" ao Index, podemos utilizar o comando git add *.txt, ou todos os arquivos em uma determinada subpasta do repositório com git add nome_da_pasta/
+
+O comando git add -i é mais recomendado quando temos um número muito grande de alterações a serem adicionadas ao Index, e também um grande número de alterações que não gostaríamos de adicionar ao Index. O modo interativo inclusive permite que adicionemos seletivamente trechos de um arquivo, deixando algumas modificações de fora mesmo estando no mesmo arquivo.
+
+--comitar tudo de uma unica vez
+	O comando git commit -a já cria um novo HEAD com todas as alterações detectadas no repositório, porém novos arquivos não serão adicionados. O comando pode ser utilizado diretamente, dessa maneira o editor de textos padrão do computador será aberto para que uma mensagem de "commit" seja adicionada.
+Podemos combinar a opção de mensagem com git commit -am 'Mensagem de commit'
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Sincronizando dados com repositorio

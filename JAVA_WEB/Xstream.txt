@@ -1,0 +1,119 @@
+Xstream
+
+Para serializar um classe em um xml:
+
+	Produto geladeira = new Produto("geladeira", 1000.0, "geladeira duas portas" , 1587);
+	String xml = new XStream().toXML(geladeira);
+
+Caso eu queira mudar o nome do nó principal para que ao inver de vir <br.com.produto> venha <produto>:
+	xstream.alias("produto", produto);
+Caso queira mudar o nome de um atributo
+	xstream.aliasField("descrição", produto, "descricao");
+Caso queira colocar um atributo como atributo da tag ex: <produto codigo=\"1587\">:
+	xstream.useAttributeFor(produto, "codigo");
+	
+--------------------------------------------
+Para descerializar basta usar o metodo fromXml()
+
+Object objeto = new XStream().fromXML(new File("arquivo.xml"));//ou posso passar a string como um xml
+
+		XStream xstream = new XStream();
+		xstream.alias("compra", Compra.class);
+		xstream.alias("produto", Produto.class);
+		xstream.aliasField("descrição", Produto.class, "descricao");
+		xstream.useAttributeFor(Produto.class, "codigo");
+
+		Compra compraResultado = (Compra) xstream.fromXML(xmlDeOrigem);
+
+		Obs:Lembrando que para descerializar eu preciso de um Driver, para isso preciso do jar xmlpull-versao.jar para funcionar a descerialização
+-------------------------------------------------
+
+quando temos dois nós iguais no xstram ele tende a fazer o segundo nó uma referencia Ex:
+			  "<compra>\n" 
+            + "  <id>15</id>\n"
+            + "  <produtos>\n" 
+            + "    <produto codigo=\"1587\">\n"
+            + "      <nome>geladeira</nome>\n"
+            + "      <preco>1000.0</preco>\n"
+            + "      <descrição>geladeira duas portas</descrição>\n"
+            + "    </produto>\n"
+            + "    <produto codigo=\"1587\">\n"
+            + "      <nome>geladeira</nome>\n"
+            + "      <preco>1000.0</preco>\n"
+            + "      <descrição>geladeira duas portas</descrição>\n"
+            + "    </produto>\n"
+            + "  </produtos>\n" 
+            + "</compra>";
+
+			mas quando vc serializa ele vem com o segundo nó assim
+			<produto reference="../produto"/>(indica que este nó é semlçhante ao nó anterior)
+
+Podemos alterar o modo XSTREAM_RELATIVE_REFERENCES para uma referência absoluta. Para isso basta configurarmos o XStream para utilizar o tipo de referência baseado em XPath absoluto:
+xstream.setMode(XStream.XPATH_ABSOLUTE_REFERENCES);
+			<produto reference="/compra/produtos/produto"/>
+Mas caso queiramos que este nó sera serializado, mesmo sendo igual ao anterior temos que fazer assim:
+			xstream.setMode(XStream.NO_REFERENCES);
+			 
+			 
+Mas quando usamos este NO_REFERENCES temos que tomar cuidado com referencias circular, tipo um objeto que intancia um outro e este outro instancia o anterior e o anterior instancia este mesmo, criando um circulo referencial 
+Cuidado com referencia circular***
+O proprio xstream lança uma exceção CircularReferenceException
+
+
+https://s3.amazonaws.com/caelum-online-public/XSTREAM/2/erro-referencia-relativa.png
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+E se quisermos por exemplo remover a tag <produtos>
+
+<compra>
+  <id>15</id>
+  <produtos>
+    <produto codigo="1587">
+      <nome>geladeira</nome>
+      <preco>1000.0</preco>
+      <descrição>geladeira duas portas</descrição>
+    </produto>
+    <produto codigo="1588">
+      <nome>ferro de passar</nome>
+      <preco>100.0</preco>
+      <descrição>ferro com vaporizador</descrição>
+    </produto>
+  </produtos>
+</compra>
+(deixar essa coleção de forma implicita) no xstream basta fazer assim:
+
+XStream xstream = xstreamParaCompraEProduto();
+xstream.addImplicitCollection(Compra.class, "produtos");
+
+<compra>
+  <id>15</id>
+    <produto codigo="1587">
+      <nome>geladeira</nome>
+      <preco>1000.0</preco>
+      <descrição>geladeira duas portas</descrição>
+    </produto>
+    <produto codigo="1588">
+      <nome>ferro de passar</nome>
+      <preco>100.0</preco>
+      <descrição>ferro com vaporizador</descrição>
+    </produto>
+</compra>
+
+
+o xstream por padrão usa arraylist quando falamos de lista, caso eu use um linkedList por exemplo ele ira marcar isso no xml
+
+<produtos class="linked-list">
+    <livro codigo="1589">
+      <nome>O Pássaro Raro</nome>
+      <preco>100.0</preco>
+      <descrição>dez histórias sobre a existência</descrição>
+    </livro>
+    <musica codigo="1590">
+      <nome>Meu Passeio</nome>
+      <preco>100.0</preco>
+      <descrição>música livre</descrição>
+    </musica>
+  </produtos>
+
+	

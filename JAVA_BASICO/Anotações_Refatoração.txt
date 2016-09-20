@@ -1,0 +1,41 @@
+Refatoração-->Quando melhoramos nosso código, seja renomeando uma variável ou quebrando uma classe grande em várias classes pequenas, damos o nome de refatoração
+
+Metodo pequenos e faceis de serem lidos
+	.Dica: Um metodo tem que caber em uma tela(caso isso não ocorra talvez seu metodo esteja um pouco grande demais)
+
+Nomes Descritivos	
+
+Metodos Grandes:A indústria usa muito a métrica de que um método deve caber em um monitor. Outros dizem que 30 linhas é um bom tamanho
+
+Classe Grande: quebre-a em classes menores, com menos métodos
+
+Nomes adequados facilitam a leitura e manutenção dos códigos
+
+Uma variavel tem que ter um unico valor do ponto de vista semantico(tipo se eu criei ela para guarda valores de quantos clientes estão disponiveis ,não é legal que mais para frente eu guarde os valores dos clientes que estão aguardando ficar disponiveis)
+
+if algoritimico-->Um if algorítmico é importante. Os refatoramos quando a condição é muito complicada, e aí um método com nome melhor pode facilitar a legibilidade.
+if complexo(guardar em metodo com nome mais semantico)
+
+Evitar metodos que recebam um booleano como parametro(ver a possibilidade de dividir este metodo em 2) pois isso prejudica a legibilidade do codigo
+	Ex: double valor1 = fatura.converteValor(true);----------Veja que não fica claro para que serve este booleano que esta sendo passado
+	    double valor2 = fatura.converteValor(false);
+
+	    public double converteValor(boolean dolar) {
+        	double taxa = 1;
+        	if (dolar) taxa = 2.7;
+        	return valorMensal * taxa;
+    	    }
+
+	-------------Separando este metodo---------------------	
+ 	
+	double valor1 = fatura.emDolar();----------Veja que agora esta muito mais legivel o que os metodos fazem
+	double valor2 = fatura.emReal();
+	public double emDolar() {
+        	double taxa = 2.7;
+        	return valorMensal * taxa;
+    	}
+
+Precisamos evitar ao máximo parâmetros booleanos. Para isso, podemos criar novos métodos, sobrecarregar métodos já existentes, usar fábricas. Lembre-se que métodos com booleanos não fazem mais de uma coisa por natureza, e devemos evitá-los.
+    	public double emReal() {
+        	return valorMensal;
+    	}

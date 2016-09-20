@@ -1,0 +1,415 @@
+﻿
+
+SOAP
+
+JAX-WS
+JAX-RPC, antigo padrão de serviços web, o nome antigo do JAX-WS
+
+Web Service do W3C é baseado em HTTP e XML, duas tecnologias onipresentes e que a maioria das linguagens sabe trabalhar muito bem.Vamos estudar um pouco de XML durante as próximas seções para dar o embasamento do SOAP e do WSDL, assuntos que veremos em breve.
+
+Desde a versão 1.6 do Java as classes para rodar um Web Service SOAP foram embutidas na JRE. Dentro da plataforma Java as bibliotecas são organizadas em especificações. A especificação que trata de SOAP se chama JAX-WS (Java API for XML - Web Service) e a sua implementação referencial, o Metro (https://jax-ws.java.net/), está embutida na JRE.
+
+Nas primeiras seções vamos utilizar apenas a JRE para criar serviços web para simplificar o ambiente de execução. 
+
+Primeiro temos que anotar uma classe como um servico acessivel
+
+Para realmente indicar que queremos criar o Web Service devemos usar a anotação @WebService. Ou seja, a nossa intenção é chamar aquele método usando HTTP e XML:
+@WebService
+public class EstoqueWS {
+    private ItemDao dao = new ItemDao();
+
+    public List<Item> getItens() {
+
+        System.out.println("Chamando getItens()");
+        return dao.todosItens();
+    }
+}
+
+Publicando o primeiro Endpoint
+omo não estamos usando um servidor formal é preciso publicar o serviço programaticamente. No mundo de serviços web isso é chamado de publicar o Endpoint. O Endpoint é o endereço concreto do serviço. A classe Endpoint possui o papel de associar a nossa implementação EstoqueWS com uma URL:
+public class PublicaEstoqueWS {
+
+    public static void main(String[] args) {
+
+        EstoqueWS implementacaoWS = new EstoqueWS();
+        String URL = "http://localhost:8080/estoquews";
+
+        System.out.println("EstoqueWS rodando: " + URL);
+
+        //associando URL com implementacao
+        Endpoint.publish(URL, implementacaoWS);
+    }
+
+}
+
+WSDL significa Web Service Description Language e não é nada mais do que um XML que descreve o nosso serviço! Nele temos todas as informações, independente do Java, que um cliente precisa para chamar o Endpoint. Fácil não?
+
+Repare que uma mensagem SOAP possui um Envelope, um Header (cabeçalho opcional) e um Body que possui um elemento com o mesmo nome do método no serviço: getItens.
+
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ws="http://ws.estoque.caelum.com.br/">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <ws:getItens/>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+-SOAP é XML que trafega em cima do protocolo HTTP
+-o JRE já vem com o JAX-WS (Metro) para usar SOAP
+-o contrato do serviço é o WSDL que também é um XML
+-uma mensagem SOAP possui um Envelope e um Body
+-na mensagem SOAP o Header é opcional
+
+O SOAP é um padrão ou protocolo que define o XML que trafega entre Cliente e Servidor quando o serviço web é executado. Esse XML também é chamado de mensagem SOAP.
+
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ws="http://ws.estoque.caelum.com.br/">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <ws:todosItens/>
+   </soapenv:Body>
+</soapenv:Envelope>
+
+--> na primeira linha existem duas url, par que servem?
+As duas definições são mais do que URLs, elas são namespaces!
+xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+xmlns:ws="http://ws.estoque.caelum.com.br/"
+Um namespace é parecido com o package do mundo Java e ajuda distinguir elementos e evitar conflitos de nomes. O primeiro namespace define os elementos padrão do SOAP como Envelope e Body. O segundo serve para usar os elementos do nosso modelo como o item.
+Além disso, o primeiro namespace indica que estamos usando SOAP na versão 1.1 (não muito explicito mas se fosse SOAP 1.2 seria o namespace http://www.w3.org/2003/05/soap-envelope - acreditem!).
+
+----------------------------------------------------------------------------------
+
+@WebMethod e @WebResult
+Para evitar esse problema, o JAX-WS nos oferece uma alternativa: a anotação @WebMethod. Com ela, podemos redefinir o nome da operation no WSDL e assim também manipular a mensagem SOAP.
+
+@WebMethod(operationName="todosOsItens")
+public List<Item> getItens() {
+    System.out.println("Chamando getItens()");
+    return dao.todosItens();
+}
+
+
+mapeando com JAX-B
+
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
+public class ListaItens {
+
+    @XmlElement(name="item")
+    private List<Item> itens;
+
+    public ListaItens(List<Item> itens) {
+        this.itens = itens;
+    }
+
+    //esse construtor também é necessário
+    ListaItens() {
+    }    
+}
+
+agora nosso wsdl esta bem melhor
+
+ 	<itens>
+            <item>
+               <codigo>SEO</codigo>
+               <nome>SEO na Prática</nome>
+               <quantidade>4</quantidade>
+               <tipo>Livro</tipo>
+            </item>
+
+            <!-- outros itens omitidos -->
+	</itens>
+
+-as anotações do JAX-WS servem para personalizar o WSDL
+-a especificação JAX-B gera o XML por baixo dos panos
+
+caso eu queira passar algum parametro para meu metodo basta parra na assinatura como fazemos normalmente, e usamos o @webParam para dar um nome mais amigavel no wsdl
+
+    @WebMethod(operationName = "todosOsItens")
+    @WebResult(name="itens")
+    public ListaItens todosItens(@WebParam(name="filtros") Filtros filtros) {
+        System.out.println("Chamando todosItens()");
+        System.out.println("Chamando getItens()");
+        List<Filtro> lista = filtros.getLista();
+        List<Item> itensResultado = dao.todosItens(lista);
+        return new ListaItens(itensResultado);
+    }
+
+dar uma olhada nas anotações @ResponseWrapper(localName="itens") e @RequestWrapper(localName="listaItens")***
+
+-----------------------------------------------------------------------------------
+Podemos informar que parametros podem vir atraves do header do soap
+
+  @WebMethod(operationName="CadastrarItem") 
+  @WebResult(name="item")
+  public Item cadastrarItem(@WebParam(name="tokenUsuario", header=true) TokenUsuario token) {
+	//...
+  }
+
+Exceções no mundo soup são conhecidos como fault --> <fault ...
+Exceptions são mapeadas para Faults
+
+
+No mundo Java as exceções são mapeadas para Faults. O JAX-WS define duas categorias ou tipos de exceções:
+
+Modeled (Modelado) - Para mapear uma exceção explicitamente a partir da lógica de negócios no código Java. As definições desse Fault estão no arquivo WSDL, as falhas SOAP são previstas no WSDL.
+
+Unmodeled (Não modelado) - Para mapear uma exceção (normalmente do tipo java.lang.RuntimeException) que acontecerá em tempo de execução se alguma lógica falha. Neste caso, as exceções Java são representados como falha SOAP genérico.
+
+Modeled --> geralmente excecoes checked 
+unmodeled --> geralmente excecoes unchecked 
+
+a mensagem fault de uma excecao unmodeled é mais simples e não tem detalhe(não adianta mapear esse tipo de exceção com @WebFault)
+
+Mapeando uma exception(Modeled):
+
+@WebFault(name="AutorizacaoFault", messageName="AutorizacaoFaultMessage")
+public class AutorizacaoException extends Exception {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	public AutorizacaoException(String string) {
+		super(string);
+	}
+
+    	//novo ->este metodo é o detalhe do erro tem que ter esta assinatura para aparecer no WSDL
+    	public String getFaultInfo() {
+    	    return "Token invalido";
+   	 }
+	
+}
+
+
+<faultcode> - Server ou Clientpara indicar onde ocorreu o problema, mas existem outros como VersionMissmatch
+<faultstring> - uma explicação do Fault legível para humanos
+<detail> - mais informações sobre o Fault, normalmente especificas da aplicação
+
+
+
+Qual das responsabilidades abaixo é do SOAP Header?
+	Trafegar dados sobre o autenticação e autorização.
+	Trafegar dados sobre a validade da mensagem.
+
+Através do Header e Body podemos separar as meta-informações dos dados principais, o que é muito comum em protocolos de comunicação. No Body ficam os dados principais da mensagem SOAP. Já no Header colocaremos informações de autenticação/autorização, validade da mensagem, tempos mínimo de resposta ou dados sobre da transação entre várias outras possibilidades.
+
+para informar que os atributos que o ws recebe são obrigatorios precisamos informar isso em suas respctivar classes com anotação do JAX-B
+
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public class TokenUsuario {
+
+    		@XmlElement(required=true)
+    		private String token;
+
+		//***
+	}
+
+---DAR UMA OLHADA NO PROJETO COMO CRIEI UM ADAPTER PARA A DATA NO JAX-B NA CLASSE TokenUsuario
+
+-------------------------------------------------------------------------------
+
+WSDL abstrato e concreto
+
+para gerar o wsdl podemos usar o wsgen que ja vem com o jdk
+
+wsgen -wsdl -inlineSchemas -cp bin br.com.caelum.estoque.ws.EstoqueWS
+
+Qual é papel do XSD na definição do serviço?
+	R:O XSD ou XML Schema ou apenas Schema descreve a estrutura de um documento XML. O XSD define como se compor uma mensagem SOAP, o que pode aparecer no XML, quantas vezes, quais tipos, nomenclatura etc. Segue um exemplo do token do usuário no XSD:
+      <xs:complexType name="tokenUsuario">
+        <xs:sequence>
+          <xs:element name="token" type="xs:string"/>
+          <xs:element name="dataValidade" type="xs:dateTime"/>
+        </xs:sequence>
+      </xs:complexType>
+Repare que o elemento token é uma string e o elemento dataValidade é um dateTime. Ambos elementos definem uma sequencia, o tokenUsuario.
+
+O elemento <message> descreve os dados a serem trocados entre cliente e servidor. Ou seja, cada mensagem representa uma entrada ou saída.
+Dentro de um elemento <message> vem os part que associa um tipo concreto do XSD. Por exemplo:
+
+<message name="AutorizacaoFault">
+    <part name="fault" element="tns:AutorizacaoFault"/>
+</message>
+
+Quais elementos fazem parte do WSDL abstrato?
+	R:Os elementos que definem o WSDL abstrato são: <types>, <message> e <portType>. Assim que temos os elementos <binding> e <service> o WSDL se torna concreto.
+Concreto significa que há informações sobre o encoding (veremos no próximo capítulo), sobre o protocolo e o endereço do serviço.
+
+O <portType> é parecido com uma interface Java e define as operações com entrada e saída.
+
+existe uma parte abstrata e concreto no WSDL
+a parte abstrata é parecido com uma interface
+a parte concreta é para definir o protocolo e endereço
+a parte abstrata define os tipos, mensagens e operações
+a interface no WSDL se chama portType
+podemos usar wsgen para gerar o arquivo WSDL
+
+--Serviço de MÃO UNICA
+queremos é criar um serviço de "mão única". Deixando claro aos clientes que esse serviço não terá resposta e que ele não precisará esperar pelo processamento da requisição. Fazemos isso anotando o método (de retorno void) com @Oneway.
+
+Este serviço não tera output, logo o cliente chama o serviço e jaera, não precisa esperar o processamento finalizar
+---
+
+------------------------------------------------------------------------------------------
+
+RPC
+
+
+Segue abaixo os dados de uma requisição SOAP:
+POST /pedido HTTP/1.1
+Host: http://www.caelum.com.br
+Content-Type: application/soap+xml; charset=utf-8
+
+<?xml version="1.0"?>
+<soap:Envelope
+xmlns:soap="http://www.w3.org/2001/12/soap-envelope"
+soap:encodingStyle="http://www.w3.org/2001/12/soap-encoding">
+
+<soap:Body xmlns:m="http://www.caelum.com.br/pedido">
+  <m:pedido>
+    <m:codido>1742</m:codigo>
+    <m:valor>319.12</m:valor>
+    <m:data>01/12/2015</m:data>
+  </m:pedido>
+</soap:Body>
+
+</soap:Envelope>
+Qual estilo (style) foi utilizado no WSDL?
+
+-->R:Na mensagem SOAP apareçam apenas informações sobre os dados que indica que foi utilizado o estilo Document. Se fosse RPC aparecia o nome do método na mensagem SOAP.
+
+
+
+Segue a mensagem SOAP abaixo:
+<?xml version="1.0"?>
+<soap:Envelope xmlns:soap="http://www.w3.org/2001/12/soap-envelope" soap:encodingStyle="http://www.w3.org/2001/12/soap-encoding">
+
+<soap:Body xmlns:p="http://www.teste.com.br/parcelas">
+    <soap:body>
+        <p:getValorParcelas>
+            <p:valor xsi:type="xsd:float">500.0</p:valor>
+            <p:qtd xsi:type="xsd:int">5</p:qtd>
+        </p:getValorParcelas>
+    </soap:body>
+</soap:envelope>
+Qual estilo e codificação foi utilizado?
+
+R:Tudo indica que foi utilizado RPC/encoded pois o nome do método está visível no SOAP e a mensagem possui os tipos codificados (por exemplo xsd:float).
+
+Em uma situação onde não precisamos dizer, na mensagem SOAP, qual método/procedure será executado podemos usar o estilo:
+	R:Como vimos, o estilo Document é usado para simplesmente passar uma informação. Sem dizer explicitamente qual método será chamado no servidor, já que não é de nossa conta o que irá acontecer com essa informação (:
+
+
+Segue um exemplo de um XML SOAP da página W3C:
+<?xml version="1.0"?>
+<soap:Envelope
+xmlns:soap="http://www.w3.org/2001/12/soap-envelope"
+soap:encodingStyle="http://www.w3.org/2001/12/soap-encoding">
+
+<soap:Body xmlns:m="http://www.example.org/stock">
+  <m:GetStockPrice>
+    <m:StockName>IBM</m:StockName>
+  </m:GetStockPrice>
+</soap:Body>
+
+</soap:Envelope>
+Qual codificação foi utilizado?
+	R:Nesse exemplo foi utilizado literal como codificação. Como falamos antes na codificação encoded a mensagem SOAP também trafega os tipos que não é o caso no exemplo da pergunta.
+Lembrando também que Wrapped e Bare não definem como os tipos serão codificados. Wrapped e Bare são configurações utilizadas pelo JAX-WS em conjunto com Document para dizer que queremos embrulhar a mensagem ou não.
+
+
+
+Não é mais recomendado o uso de?
+	R:Como já conversamos, o estilo de codificação Encoded traz a facilidade de leitura e como consequência alguns problemas de compatibilidade, validação e desempenho. Segundo a WS-I (Web Services Interoperability Organization) deve-se usar apenas os estilos Document/Literal e RPC/Literal. E o JAX-WS foi projetado para seguir essa limitação.
+
+
+
+
+Document/Literal Wrapped**** Dar uma olhada na explicação do anti penultimo exercicio da aula 5 de JAX-WS
+
+
+Caso queiramos alterar essas configurações de document, rpc etc podemos usar a anotação @SoapBinding
+
+@WebService
+@SOAPBinding(style=Style.DOCUMENT, parameterStyle=ParameterStyle.BARE)
+public class EstoqueWS {/---}
+
+Como vimos, o estilo Document é usado para simplesmente passar uma informação enquanto RPC foi pensado para chamar uma operação remotamente. Uma alternativa ao RPC é o padrão Document/Wrapped.
+
+
+O elemento <binding> realiza uma ligação entre o elemento <service> (que define o endereço e o protocolo do serviçoo) e o elemento <portType> (que define a interface), além de definir detalhes sobre a mensagem SOAP (no elemento <operation>).
+Em WSDL abstrato somente definimos a interface, o que é suficiente para implementação do serviço. Deixamos detalhes a respeito do formato da mensagem e de como ela deve ser entregue a cargo do WSDL concreto.
+
+-----------------------------------------------------------------------------------------------
+IMPLEMENTANDO UM SERVIÇO JAX-WB ATRAVES DO UTILITARIO WSDL2JAVA --->usando o webconsume do wildfly 
+
+Vimos duas abordagens de criar um Web Service SOAP no treinamento: Contract first e Contract last
+Produzir um serviço a partir de um WSDL é chamado de Contract first. Gerar o WSDL a partir de uma classe Java, ou seja implementar primeiro o serviço (e o resto é gerado) é chamado do Contract last.
+
+você consegue imaginar alguma desvantagem do Contract First?
+	R:Como desvantagem podemos notar que é preciso conhecer bem as especificações relacionadas aos Web Services que são WSDL e XSD, em geral é preciso dominar o mundo XML. Com Contract first não basta conhecer algumas anotações da plataforma e gerar as classes. Contract last é muito mais simples pois abstrai todo o mundo SOAP/WSDL pois o WSDL e XSD são gerados.
+	
+JAX-WS é uma especificação, logo a sua implementação que vem com a jre é a METRO , ja a do wildfly é a CXF, e existem tambem uma implementação chamada Axis2 do apache
+
+-----------------------------------------------------------------------------------------------
+
+criando cliente com wsimport
+
+
+Ja usamos o SOAPUI como cliente agora vamos desenvolver o nosso
+
+Usando o wsimport
+O Metro possui uma ferramenta, o wsimport (e justamente essa ferramenta só vem com o JDK), que consegue gerar as classes que acessam o serviço de uma maneira transparente. Objetivo do wsimport é o mesmo do wsdl2java, gerar as classes para criar o cliente ou servidor.
+
+Para tal, basta passar o endereço do WSDL e automaticamente serão criadas todas as classes necessárias para chamar o serviço remoto. O wsimport é um gerador de código para serviços SOAP!
+
+entre atraves do cmd na pasta bin da jdk e execute o comando (C:\Program Files\Java\jdk1.8.0_65\bin)
+
+wsimport -s C:\Users\Furmiga\Documents\Estudos\WORKSPACE_SOAP\estoquews-cliente\src -p br.com.caelum.estoque.cliente    http://localhost:8080/estoque/EstoqueWS?wsdl
+
+Repare nos parâmetros que passamos:
+-s - diretório dos arquivos .java gerados
+-p - pacote das classes geradas
+
+
+Quando criamos o cliente de um serviço SOAP, qual é o papel do Port?
+	R:O Port é o objeto que se comunica com o serviço remotamente. Ele abstrai todos os detalhes como estabelecer a conexão HTTP e gerar a mensagem SOAP.
+No mundo de padrões de projeto esse objeto também é chamado de Proxy ou Remote Proxy. Vimos a definição do port no WSDL dentro da seção service:
+
+<service name="EstoqueWSService">
+    <port name="EstoqueWSPort" binding="tns:EstoqueWSPortBinding">
+      <soap:address location="REPLACE_WITH_ACTUAL_URL"/>
+    </port>
+  </service>
+  
+  
+  
+wsimport e wsdl2java são ferramentas de linha de comando para gerar as classes Java a partir do WSDL.As classes geradas ajudam escrever programas no lado do cliente ou servidor para serviços Web e abstraiam todo o trabalho com SOAP e HTTP em geral. Essas classes também são chamadas de stubs de cliente ou esqueletos de servidores.
+
+
+ Stub que é apenas um sinónimo para Port ou Remote Proxy!
+ 
+ 
+ Há uma variação para criar um serviço web usando diretamente a classe Service do JAX-WS, mas devemos passar a URL e o namespace do serviço.
+public class ClienteEstoque{
+
+    public static void main(String[] args) throws Exception {
+
+        URL url = new URL("http://localhost:8080/estoquews?wsdl");
+        QName qname = new QName("http://ws.estoque.caelum.com.br/", "EstoqueWSService");
+
+        Service service = Service.create(url, qname);
+
+        EstoqueWS cliente = service.getPort(EstoqueWS.class);
+
+        Filtro filtro = new Filtro();
+        filtro.setNome("IPhone");
+        filtro.setTipo(TipoItem.CELULAR);;
+
+        ListaItens lista = cliente.todosOsItens(Arrays.<Filtro>asList(filtro));
+
+        for (Item item : lista.item) {
+            System.out.println(item.getNome());
+        }
+    }
+}
