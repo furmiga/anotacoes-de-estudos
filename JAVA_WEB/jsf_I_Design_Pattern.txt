@@ -1,0 +1,45 @@
+- Recomendar deixar tanto a classe quanto os atributos como final, caso não deva alterar os mesmos
+
+- no JUNIT importar sempre do pacote org.junit pois o pacote junit.framework é da versão antiga
+
+- O JUnit não nos obriga a seguir esta convenção, mas o padrão é sempre NomeDaClasseTest. Isso facilita a    rastreabilidade das classes de teste.
+
+- Outra convenção importante é que os testes ficam separados do código de produção. Os testes devem estar na pasta src/test/java enquanto o código de produção fica em src/main/java.
+
+- NO ECLIPSE PARA GERAR UMA CLASSE DE TESTE VBASEADA EM OUTRA BASTA CLICAR NA CLASSE DAR UM CTRL + N E DIGITAR TEST, AI ESCOLHER A OPÇÃO DE JUNIT TEST E PASSAR O SOURCE FOLDER CORRETO, ELE JA CRIA A CLASSE COM A CONVENÇÃO DE NOMENCLATURA
+
+- Uma asserção é uma verificação. Ela é realizada através dos métodos estáticos da classe Assert, importada de org.junit .
+
+- As asserções verificam o resultado da execução da lógica, e baseado nelas o JUnit sabe se um teste falhou ou não.
+
+- ONDE O UNIT MOSTRA A BARRINHA SE PASSOU OU NÃO : O Errors: 0 significa que não foi lançado nenhuma exceção na execução do teste. Quando o teste falha (Failures: 1) sabemos que um Assert não passou.
+
+- O import static também funciona para atributos estáticos:
+	.import static Thread.MAX_PRIORITY;
+	.Agora podemos usar o MAX_PRIORITY sem o nome da classe no nosso código, algo útil quando trabalhamos com enumerações
+
+- para informar para o junit que aquele metodo deve gerar uma excecao eu faco a anotação assim:
+	.@Test(expected=IllegalArgumentException.class)
+
+- usa o builder quanto tiver que criar uma classe que recebe uma caralha de argumentos no construtor
+	
+-O método assertEquals serve para a maioria das asserções feitas dentro de um teste do JUnit. Porém, é uma boa prática utilizarmos métodos mais adequados como assertTrue, assertFalse
+
+-------------------------------------------------------------------
+
+TDD COMO DOCUMENTAÇÃO
+
+-Um documento ou um diagrama pode mentir, pois ninguém garante que ele seja atualizado. Já uma bateria de testes, quando nosso código muda para refletir determinada regra, deixa de passar e grita para que o desenvolvedor o atualize. Sendo assim, o código nunca mente. Quando bem elaborado, testes servem como um documento valioso para se compreender o sistema e seu atual funcionamento.
+Sendo assim, a prática do TDD ganha ainda mais força quando pensamos no caso hipotético relatado anteriormente.
+
+-LINK QUE FALA MAIS SOBRE TDD: http://tdd.caelum.com.br/
+
+
+-Pesquisando na web sobre TDD você encontrará duas definições:
+	.Test Driven Development
+	.Test Driven Design
+De certa forma são sinónimos mas o segundo termo deixa mais claro que os testes também trazem melhorias para o design das suas classes.
+
+Existe uma grande sinergia entre testabilidade do seu código e um bom design, você tem uma ideia porque?
+	r:Isso acontece pois, para que o programador consiga testar uma classe de maneira isolada e facilmente, essa classe deve lidar muito bem com suas dependências (buscando sempre um baixo acoplamento) e possuir pouca responsabilidade (ou seja, ser altamente coesa).
+Caso contrário, o programador gastará muito tempo tentando testá-la, um possível indicador de que a classe apresenta um design pobre.
