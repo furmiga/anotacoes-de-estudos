@@ -1,0 +1,13 @@
+Fases do pentester
+	5 fases:
+		--> reconhecimento
+		--> fase de varredura
+		--> ganho de acesso
+		--> manter o acesso
+		--> cobrindo rastros
+		
+nda - non disclosure agreement : documentação com o cliente que informa ate onde voce pode chegar no teste 
+
+relatorio de um pentester
+	sumario executivo: não é tecnico, e para o cliente que nao é da area entender
+	Relatorio tecnico: passo a passo do que foi feito no teste

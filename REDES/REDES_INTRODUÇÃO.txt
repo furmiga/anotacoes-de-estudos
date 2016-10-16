@@ -1,0 +1,105 @@
+RTT
+
+O que é uma rede:
+	Uma rede de computadores é formada por um conjunto de máquinas eletrônicas com processadores capazes de trocar informações e partilhar recursos
+	
+Qual ferramenta administrativa eu uso para testar conectividade?
+	PING: Dentro do ping temos o protocolo ICMP responsável por fazer a requisição até uma máquina remota (Echo Request) e esperar a resposta (Echo Reply). Através desse protocolo ICMP, podemos verificar se temos uma resposta da máquina remota, sabendo assim se temos conectividade.
+
+O que seria o TTL que aparece no teste do ping?
+	O TTL seria uma informação dentro do pacote do IP que informa qual é a máxima quantidade de hops que minha informação pode passar antes de ser descartada. É a quantidade de máquinas que ela vai poder passar no caminho.
+		-caso a quantidade de maquinas exceda este valor , meu pacote sera morto, isso para evitar loops , pois caso isso aconteça meu pacote ficaria vivo por toda a eternidade kkkkk
+	
+-O TRACEROUTE(ou tracert no windows) seria usado para verificar a rota que minha informação percorreu até chegar o destino.
+		. quando fazemos o traceroute podemos ver que algumas maquinas não retornam o tempo (volta umn *) isso pq esses servidores devem ter desabilitado a recepção de requisição por protocolo icmp, para evitar sobre carga desnecessaria e evitar inicio de testes de invasão
+
+Quando eu digito traceroute e temos que uma máquina retornou a informação (*), o que isso quer dizer?
+	Quando nós temos uma máquina que retornou (*) e passou a informação para uma próxima máquina, isso provavelmente indica que o administrador dessa máquina desabilitou a resposta ao nosso chamado. O que acontece seria que esse tipo de teste pode ser interpretado como uma tentativa de “scanear” possíveis portas de acesso que estejam abertas na máquina, caso seja usado por um usuário malicioso, pode ser usada como uma forma de reconhecimento da rede dessa possível vítima.
+		
+	
+SERVIDOR DNS: MAPEIA O NOME DO SITE PARA O ENDEREÇO IP, ASSIM COMO ENDEREÇO IP PARA O NOMDE DO SITE
+
+Caso o tempo indicado no teste do ping esteja mais elevado em relação ao valor que normalmente apresenta, o que isso quer dizer?
+	Quando temos um alto valor no índice do tempo do teste do ping, isso significa que podemos ter um problema em nossa comunicação. O protocolo ICMP que está dentro do ping manda um Echo request e aguarda um retorno de resposta da máquina destino (Echo Reply). Dessa forma, o tempo elevado pode indicar um problema na comunicação que pode estar tanto em um trecho como em outro.
+	
+Qual o principal uso do traceroute?
+	A principal funcionalidade do traceroute seria verificar a rota que minha informação levou para chegar até a máquina de destino. Isso porque, em redes de computadores temos o que chamamos de rede não determinística, ou seja, não necessariamente um pacote de informação vai ser transferido pela mesma rota do anterior. Isso se dá a muitos fatores, como por exemplo, uma máquina que esteja congestionada, um problema no link de comunicação, etc. Pense como se fosse a rede fosse uma espécie de uma cidade com várias ruas, nem sempre pegamos a mesma rota para chegar até nossa casa ou ir para o trabalho, depende de muitos fatores, como por exemplo, trânsito, obras, etc. Nas redes de computadores não é tão diferente :)
+	
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+O que faz o servidor DNS?
+	R:Os servidores DNS são chamados de Domain Name Servers e sua função é realizar o “mapeamento” entre endereço IP e url (ex: www.google.com). Dessa forma, se estamos digitando www.google.com no browser, o servidor DNS está fazendo a tradução entre o nome da url e o endereço IP.
+	
+Qual principal uso do nslookup?
+	R:O Nslookup pode ser usado para descobrirmos o endereço IP de um domínio, bem como saber detalhes mais avançados de DNS, para saber se nosso serviço está sendo direcionado para a máquina de destino, por exemplo.
+	
+Qual equipamento podemos usar para conectar vários computadores?
+	R:O Hub
+	
+O que é NAT? **************** ESTUDAR MAIS
+	R:NAT é um método de tradução de endereços privados e públicos.
+
+Como funciona o ping?
+	R: O ping possui dentro dele um protocolo chamado ICMP, ele vai mandar uma requisição (Echo request) e aguarda uma resposta (Echo reply).
+	
+Ao digitar nslookup www.google.com eu recebo uma mensagem de resposta não autoritativa, porque recebo essa mensagem?
+	R: Uma vez que eu já acessei o site antes, essa máquina guarda em sua memória, para não ter que ficar fazendo essas requisições na internet o tempo todo. Dessa forma, a minha máquina que respondeu não tem autoridade sobre esse domínio, não é minha máquina que possui o registro do www.google.com.
+	
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Quais são os dois tipos de cabos que usamos para conexão?
+	R:Cabo dire e Cabo cruzado
+	  Caso tenhamos o mesmo padrão de cores na duas pontas do cabo, chamamos de cabo direto, pois as mesmas cores estão nas mesmas posições nas duas pontas.
+	  Caso tenhamos um padrão de cores diferente em cada ponta do cabo, teremos o que chamamos de cabo cruzado.
+	  
+O que caracteriza um cabo cruzado?
+	R:Quando temos um padrão de cores diferente em cada ponta do cabo, teremos o que chamamos de cabo cruzado.
+	
+O que caracteriza um cabo direto?
+	R:Quando temos um padrão de cores iguais nas duas pontas do cabo, teremos o que chamamos de cabo direto
+	
+Quais são os dois padrões feitos pela TIA?
+	R:	O padrão de cores feitos pela TIA seria T568A e T568B, sendo que a T568A possui a sequência de cores, nesta ordem:
+		Branco e verde, verde, branco e laranja, azul, branco e azul, laranja, branco e marrom, marrom
+		E a T568B:
+		Branco e laranja, laranja, branco e verde, azul, branco e azul, verde, branco e marrom, marrom
+		
+Qual tipo de cabo usamos para fazer a conexão entre dois computadores?	
+	R: Pelo fato de termos dois computadores, eles tem o mesmo tipo de placa de rede e vão transmitir os sinais nas mesmas posições. Dessa forma é necessário realizar essa compatibilidade entre os sinais de transmissão e recepção e isso é obtido através do cabo cruzado.
+	
+Qual tipo de cabo usamos para fazer a conexão entre um computador e um Hub?
+	R:Pelo fato das posições de transmissão e recepção nos computadores e hubs serem feitos em posições diferentes, nós teremos a mesma sequência de cores nas duas pontas, caracterizando assim um cabo direto.
+	
+Onde é transmitido os sinais nas placas de rede dos computadores por padrão?
+	R: Fios 1 e 2
+	
+Onde é recebido os sinais nas placas de rede dos computadores por padrão?
+	R: As placas de rede dos computadores recebem por padrão nas posições 3 e 6.
+	
+Onde é transmitido os sinais nas placas de rede dos hubs por padrão?
+	R:  Fios 3 e 6
+	
+Onde é recebido os sinais nas placas de rede dos hubs por padrão?
+	R:  Fios 1 e 2
+	
+ESTUDA padrão auto-MDIX ****************************************************************************
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+************************ESTUDAR UM POUCO SOBRE MODELO OSI E TPC/IP
+
+Qual seria duas das principais limitações do Hub?
+	R:Os hubs não conseguem aprender onde está localizado cada máquina, dessa forma, ele repassa a informação para todas as demais máquinas conectadas. Isso quer dizer que caso ocorra um fluxo intenso de tráfego na rede, teremos essa informação sendo encaminhada para todos os demais usuários causando lentidão na rede. Além disso, quando usuários mandam a informação destinada para um usuário específico, os demais usuários recebem essa informação, causando assim uma vulnerabilidade de segurança.
+	
+Qual a principal utilização do programa Wireshark?
+	R: O Wireshark tem como principal utilização analisar protocolos que trafegam na rede com o intuito de verificar problemas que possam existir.
+	
+Qual desses é um protocolo utilizado para criptografar minha informação?
+	R: TLS (Transport Layer Security) seria um protocolo de criptografia utilizado para segurança da informação. Ele seria a evolução do protocolo SSL (Secure Sockets Layer).
+	
+Qual seria a responsabilidade do protocolo TCP?
+	R: O protocolo TCP encontra-se acima da camada onde o IP está localizado e ele é responsável por realizar o transporte da minha informação. Além do protocolo TCP, essa camada possui também outro protocolo bastante conhecido, o UDP.
+	
+Porque não foi possível visualizar a informação que o usuário (vítima) digitou na página do youtube?
+	R: O youtube usa em seu site um sistema de criptografia das informações, onde o protocolo TLS é responsável por essa atividade. Pelo fato das informações, estarem criptografadas não foi possível reconstruir a informação e visualizar o que o usuário estava digitando.
+	
