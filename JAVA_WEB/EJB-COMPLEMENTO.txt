@@ -1,0 +1,110 @@
+O EJB é um meio para que possamos utilizar os recursos do servidor
+
+é através dos EJBs que temos acesso aos serviços que o servidor oferece sem nos preocuparmos em como cada um deles foi inicializado
+
+anotação @Stateless registrou o EJB dentro de um registro disponível no servidor. Aquele registro se chama JNDI e o que estamos vendo na saída é o endereço do EJB nesse registro JNDI. O servidor usa por baixo dos panos esse registro JNDI para organizar os componentes que ele administra.
+
+um Session Bean não é compartilhado entre Threads. Apenas um thread pode usar o nosso AutorDao ao mesmo tempo. Um Session Bean é automaticamente Thread safe. Thread safety é um dos serviços que ganhamos de graça ao usarmos EJBs.
+https://s3.amazonaws.com/caelum-online-public/ejb/ejb-cap2-threadsafe.png
+
+O EJB Container automaticamente fornece um pool de objetos que gerencia a quantidade do Session Beans. A configuração desse pool se encontra no arquivo de configuração do JBoss AS, ou seja, é totalmente específico.
+
+Quando eu tenho um ejb e injeto algum objeto nesta classe, essa classe ser gerenciado pelo ejb e tipo se meu pool de objetos acabar ele vai esperar uma instancia ficar livre p poder disponibilizar
+
+@stateless
+class Teste{
+	
+	//as instancias desta classe serão gerenciadas pelo EJB, ele decide se vai usar uma instancia existente ou criar uma nova, de acordo com o pool
+	@Inject
+	private Classe classe;
+
+}
+
+Vamos abrir o arquivo standalone.xml da pasta de standalone/configuration. Nele procuraremos o elemento <pools>. Dentro desse elemento, encontraremos a configuração do pool para session beans. Repare o atributo max-pool-size que define a quantidade de objetos no pool. No nosso caso são 20 instancias.
+
+	<pools>
+			 <bean-instance-pools>
+				   <strict-max-pool name="slsb-strict-max-pool" max-pool-size="20" instance-acquisition-timeout="5" instance-acquisition-timeout-unit="MINUTES"/>
+				   <!-- outros elementos omitidos -->
+			 </bean-instance-pools>
+	</pools>
+	
+Mas eu posso querer que uma classe especifica tenha uma unica instancia sempre, para isso eu coloco a anotação @Singleton, se eu não colocar o container EJB vai criar as instancias de acordo com o pool
+
+@Singleton // do package javax.ejb
+class Teste{
+
+}
+	Na classe Banco usamos um Session Bean especial, o Singleton Bean. Ele é especial pois garante automaticamente que existirá apenas uma instância deste bean.
+
+Session Beans do tipo Singleton são tipicamente usados para inicializar alguma configuração ou agendar algum serviço. Fazer isso só faz sentido no inicio da aplicação, ou seja, quando o JBoss AS carrega a aplicação e já queremos que o Session Bean seja criado para carregar todas as configurações.
+
+Por padrão um EJB é carregado sob demanda (lazy), mas através da anotação @Startup podemos definir que queremos usar o Singleton Bean desde o início da aplicação:
+
+@Singleton //do package javax.ejb
+@Startup //eager initialization
+public class Banco {}
+
+
+
+-------------------------
+INTEGRAÇÃO EJB JPA
+
+não devemos configurar os dados da conexão dentro do persistence.xml. Quem é responsável por fornecer a conexão é o EJB Container! É um serviço que o servidor disponibilizará para a aplicação.
+
+A única coisa que deve ser feita dentro do persistence.xml é configurar o endereço do serviço. Para isso, existe a configuração <jta-data-source>
+
+Em uma aplicação mais robusta, é boa prática utilizar um pool de conexões. Cabe ao pool gerenciar e verificar as conexões disponíveis. Como existem várias implementações de pool no mercado, o JavaEE define um padrão que se chama DataSource. Podemos dizer de maneira simplificada que um DataSource é a interface do pool de conexões.
+
+----------------------------------------
+JTA
+
+MySQL precisa ter uma transação para realmente gravar os dados.
+
+Se não deixarmos nada explicito  o EJB Container automaticamente abre e consolida a transação sem ser necessário deixar isso explicito no código. Mais um serviço disponível para os EJBs!
+
+podemos deixa o uso explicito da trasação, vide exxemplo abaixo
+	@TransactionManagement(TransactionManagementType.CONTAINER) //opcional
+	public class AutorDao {}
+
+gualmente, podemos deixar explicito o padrão da configuração (atributo) para cada método. Para isso existe a anotação @TransactionAttribute:
+	@TransactionAttribute(TransactionAttributeType.REQUIRED) //opcional
+	public void salva(Autor autor) {}
+	REQUIRED significa que o JTA garante uma transação rodando quando o método é chamado. Se não tiver nenhuma transação, uma nova é aberta. Caso já tenha uma rodando, a atual será utilizada. De qualquer forma, sempre é preciso ter uma transação (REQUIRED).
+
+Isso é bem diferente caso utilizemos o JPA fora de um EJB Container. Nesse caso seria necessário gerenciar a transação na mão, ou seja, usando os método begin() e rollback()
+
+o JTA é coordenador de transação e é ele quem vai coordenar a transação do JPA.
+
+-------------------------------------------------------------
+
+EJB tambem disponibiliza serviço de interceptadores
+
+Um interceptador é uma classe que possui apenas um método. Nesse método podemos executar algum código antes e depois de uma chamada concreta de um Session Bean. Isso torna os interceptadores candidatos ideais para tratamento de erro personalizado, monitoramento ou auditoria.
+
+---------------------------------------------------------------
+
+WebService com EJB
+
+É preciso anotar a classe com @WebService para o container EJB publicar o serviços usando os padrões SOAP e WSDL
+	@WebService
+	@Stateless
+	public class LivrariaWS {}
+	
+A anotação @WebService faz parte de um outro padrão Java, o JAX-WS. O EJB usa o JAX-WS para publicar os Web Services.
+
+A chamada de um Web Service SOAP é por padrão uma requisição do tipo POST
+
+Interface do serviço - WSDL
+O serviço foi automaticamente publicado com outro serviço que descreve detalhadamente o primeiro. Esse arquivo define as mensagens SOAP, os tipos e os nomes de elementos. É a definição do serviço ou a interface do serviço. Podemos ver a interface pela mesma URI adicionando o parâmetro ?wsdl
+
+A instalação do JRE já vem com todas as classes necessárias para consumir um web service (especificação JAX-WS que trata SOAP/WSDL). No caso da JRE da Oracle já vem uma ferramenta, o wsimport, que consegue gerar classes que acessam o serviço de uma maneira transparente. No curso usaremos o Eclipse para criar um novo projeto e gerar automaticamente as classes do cliente para chamar o serviço.
+
+-------------------------------
+@Schedule -- DAR UMA OLHADA NESTA ANOTAÇÃO QUE É DE AGENDAMENTO DE SERVIÇO
+----------------------------------
+EAR
+
+A ideia é colocar DOIS PROJETOS(PODE SER WEB OU UM EJB E OUTRO WEB ETC...) dentro de um outro arquivo que funciona um container. Esse tipo de arquivo é chamado Enterprise Archive, ou simples EAR.
+
+https://s3.amazonaws.com/caelum-online-public/ejb/ejb-cap8-ear.png

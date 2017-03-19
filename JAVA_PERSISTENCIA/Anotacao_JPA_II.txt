@@ -284,7 +284,7 @@ O que caracteriza o Lock Otimista?
 	
 	
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-CAHE
+CACHE
 
 Quais dessas afirmações se encaixa na definição de cache?
 	R:O cache serve para melhorar a performance da nossa aplicação, pois o sistema primeiro consulta o cache e verifica se ele já contêm a informação que buscamos, antes de acessar o banco de dados, que é uma operação computacionalmente custosa.

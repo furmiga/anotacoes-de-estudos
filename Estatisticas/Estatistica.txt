@@ -1,0 +1,254 @@
+Tipos de dados:
+	Categorico: 
+		temos categorias e um é diferente do outro e não possuem relação. Masculino não é melhor que Feminino e assim por diante.
+	
+	Ordinal:
+		existe uma ordem: 1 < 2 < 3 <...< 10, mas não conseguimos comparar a diferença do 1 para o 2. Existe o sentimento que de 1 para 2 é a mesma coisa que de 2 para 3, porém não conseguimos medir de maneira precisa
+	
+	Intervalar:
+		A temperatura, é um exemplo de dado Intervalar, a diferença de um para o outro é mensurável e precisa, sabemos em celsius a diferença de um para o outro.
+	
+	Racional:
+		Ele é bem parecido com o Intervalar: ele é composto de números em ordem e podemos medir a diferença de um para o outro. Porém, nesse tipo de dado o 0 (zero) significa a ausência daquela coisa.
+	
+O que é um histograma?
+	É um gráfico que tem, no eixo X, o valor da variável sendo exibida (por exemplo, dinheiro, altura, temperatura, etc) e no outro eixo, a frequência (ou seja, quantidade de vezes que aquele item aparece na distribuição).
+
+Coisas para ter em mente:
+	tipo de dados e se a distribuição é ou não normal
+	
+--------------------------------------------------
+
+Ferramenta R
+
+Apos o download basta escrever r no cmd e o mesmo ja sera inicilizado
+
+declarar variaveis
+	//nome da variave setinha e valor
+	nome_da_variavel <- (3*7)/4
+	
+Criar uma lista
+	//usar a função c e informar os numeros
+	nome_da_variavel <- c(1, 2, 3, 4, 5, 6)
+	
+plotar um histograma com base em uma lista
+
+	//usar a função hist e passar a lista
+	hist(c(1,2,3,4,5))
+		ou 
+	hist(nome_da_varavel_que_possui_a_lista)
+	
+para ler a documentação de uma função basta usar a interrogação e depois o nome da função
+	Ex: ?hist
+	
+------------------------------------------
+
+Media mediana e moda para achar a tendencia central
+
+media: soma dos elementos divido pela quantidade de elementos
+
+mediana: elemento central da distribuição
+	par: eu pego os dois elementos centrais e faço a media aritimetica deles	
+	impar: pego o elemento central
+
+quando usar a media ou a mediana
+	Quando eu tiver dados que não possuem uma grande discrepancia entre si eu uso a MEDIA msm
+	
+	quando eu tenho os dados e possuo algum valor muito fora do que esta sendo exibido eu uso a mediana, ex: 1,2,3,4,1000 (observe que se eu fizer a media terei um valor que não condiz com a verdade, pq aquele 1000 esta falsificando meu resultado)
+
+dados ordinais: usar mediana ou moda, media não é uma boa
+
+dados intervalares: usar a media, porem se a sua distribuição tiver numeros muito fora da curva a media sera afetada.
+
+Resumo das dicas:
+	Com dados Ordinais usamos Mediana ou Moda;
+
+	Utilizamos a Média em dados Intervalares, salvo aqueles que possuam outliers;
+
+	Desenhe um Histograma, como vimos na aula passada. Verifique se consegue desenhar uma linha parecida com a Normal. Se você tiver uma distribuição normal, o cálculo da Média é um método razoável.
+
+Exercicio
+	Na distribuição abaixo, que representa a medição de altura, em metros, de diversas tartarugas marinhas. Qual é a melhor forma de encontrar a tendência central?
+	[1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 6, 6, 7]
+	
+	R:Média. Veja que não há grandes outliers, a distribuição está bem distribuída e a categoria que estamos analisando é intervalar.
+	
+------------------------------------------
+
+media mediana e moda no R
+
+Para que o programa calcule a Média Aritmética desses números, digitamos "mean( )":
+	Ex:	numeros <- c(1,2,3,4,5,6)
+		mean(numeros)
+		
+Para o cálculo da Mediana, digitamos "median( )":
+	Ex: numeros <- c(1,2,3,4,5,6)
+		median(numeros)
+		
+Para saber se os dados obedecem a uma normal podemos fazer um teste de hipotese,Para tal digitamos "shapiro.test( )"
+	EX: shapiro.test(numeros)
+		
+		o retorno sera algo parecido com isso:
+			
+			Shapiro-Wilk normality test
+			data:  numeros
+			W = 0.9868, p-value = 0.9672
+		
+		Devemos observar o valor de "p-value". Se esse número for muito pequeno, algo em torno de 0,05, não é Normal. Nesse caso ele é próximo de 1, logo devemos acreditar que é uma Normal.
+		
+Outro método que é de costume ser usado no R é o "summary( )", que nos passa várias informações importantes como a Média e a Mediana:
+	Ex: summary(lista)
+	
+		o retorno sera algo parecido com isso:
+		
+			Min. 1st Qu.   Median    Mean 3rd Qu.    Max.
+			1.00    3.00     7.00   13.09   13.50   67.00
+			
+			Esse método resume o que já sabíamos anteriormente: Média: 13,09 Mediana: 7 Valor mínimo: 1 Valor máximo: 67
+
+			mais para frente tem explicações do que são o 1º e 3º quartis.
+			
+Resumo:
+	Nessa aula vimos na prática como se utiliza o R para: Cálculo de Média e Mediana utilizando, respectivamente "mean( )" e "median( )"; Descobrir se a distribuição é Normal ou não utilizando shapiro.test( )": Se p-value for pequeno, não é Normal Se p-value for próximo de 1, é Normal; * Resumir as informações de uma lista de dados utilizando "summary ( )".
+	
+o R não tem uma função nativa para encontrar a moda, por isso temos que criar a nossa:
+	
+	Mode <- function(x) {
+     ux <- unique(x)
+     ux[which.max(tabulate(match(x, ux)))]
+	}
+	
+	para usar basta fazer assim
+	
+	Mode(c(1,2,3,4,5))
+	
+------------------------------------------------------------------------------------------
+
+amplitude, mostra a disperção dos dados(noção do quanto esses dados estão espalhados), quanto menor o valor mais proximos a media os valores estarão e quanto maior o valor mais longe:
+	para achar a amplitude eu faço a diferença entre o maior e o menor valor
+	Ex: 1 2 4 8 10
+		10 - 1 = 9 --> aqui os dados estão mais proximos da media
+		
+		1 2 6 20 30
+		30 - 1 = 29 --> aqui temos dados mais dispersos
+		
+porem a amplitude ´é muito sencivel e caso eu tenha dentro da minha amostragem um valor extremamente alto, este valor pode prejudicar minha amplitude, então o que podemos fazer para evitar este problema?
+Fazemos uma limpeza nos dados separando por QUARTIS e pegando os valores centrais
+
+Vamos lá, eu quero dividir minha amostragem em 4 partes, mas não em 4 partes "exatamente iguais". Eu quero pôr 25% para esquerda, 25% para direita e 50% no meio. Porque se eu tiver 25% para esquerda, 25% para direita, e o que está no meio; perceba que eu joguei os outliers fora, porque os outliers ou são números muito pequenos ou são números muito grandes.
+
+Ex: 3 3 6 7 7 10 10 10 11 13 30
+
+	Passo a passo: 	
+		- Primeira coisa, eu conto o número de elementos --> no caso tenho 11
+		- achar a posição do primeiro quartil
+			. total de elementos da minha distribuição, que são 11 e divido por 4, que são os números de quartis. Isso aqui me dá 2,75, que arredondado para cima dá 3. Você achou a posição do primeiro quartil(o numero 6) --> 3 3 (6)7 7 10 10 10 11 13 30
+		- Agora, nós precisamos achar o que chamamos de terceiro quartil
+			.3n/4, porque eu quero que 3/4 dos meus dados estejam antes desse terceiro quartil. Então 33/4=8,25, que eu vou arredondar para 9 --> 3 3 6 7 7 10 10 10 (11) 13 30
+		
+	-E o que está no meio é o que a gente acaba usando nas nossas contas por que 7, 10, 10, 10 não tem outlier e isso representa melhor a nossa distribuição.
+	
+	-Isso é o que chamamos de distibuição por quartis. A vantagem disso é conseguir eliminar os nossos outliers
+	
+	-E esse tipo de informação é tão comum que a gente já tem um gráfico que é muito usado no dia a dia, que é o gráfico que nós chamamos de boxplot
+		-A ideia do boxplot é passar para a gente todas essas informações: o primeiro quartil, o terceiro quartil, a média... em um único desenho.
+		
+	no grafico do link temos as informações abaixo
+		. menor valor da sua distribuição (limite inferior);
+		. maior valor da sua distribuição (limite superior);
+		. primeiro quartil;
+		. terceiro quartil;
+		. a mediana	
+	
+		https://s3.amazonaws.com/caelum-online-public/Estat%C3%ADstica+1/est1_5_1.png
+		
+		
+O que são outliers?	
+	São números extremos, geralmente muito grandes ou muito pequenos, no meio de uma distribuição. Geralmente são números que eliminamos na hora de analisar, porque são casos extremos.
+	Por exemplo, colocar o salário do Sílvio Santos no meio dos salários dos brasileiros, alterará o valor da média.
+	
+Quais são as informações que aparecem em um boxplot?
+	Mediana, Primeiro Quartil, Terceiro Quartil, Maior e Menor elementos da distribuição.
+	
+Qual a porcentagem dos dados que estão entre o primeiro e o terceiro quartil?
+	Eles representam 50% dos dados.
+	
+----------------------------------------------------------------------------------------
+Boxplot no R
+
+lista <- c(1,2,3,4,5,6,7,8,9)
+
+para gerar o grafico é simples:
+	boxplot(lista)
+
+agora caso eu queira que o R salve esse grafico em um arquivo:
+	png(file="User/alura/boxplot.png", width=700, height=700)
+		.informo onde o arquivo sera gerado
+	boxplot(lista)
+		.gero o grafico(ele não ira exibir na tela para min, pois agora ele sabe que precisa jogar este grafico no arquivo)
+	dev.off()
+		.para salvar o conteudo
+		
+
+Qual a função que exibe, além da média e mediana, o 1o e 3o quartil no R?
+	summary()
+	
+Para que serve o comando dev.off()?
+	Para finalmente salvarmos a imagem que está sendo desenhada na "memória" do R, no arquivo previamente informado.
+		OU EM OUTRAS PALAVRAS
+	Para enviar o buffer para o arquivo de imagem previamente configurado.
+	
+--------------------------------------------------------------------------------------------------------------
+Desvio padrão e variancia
+
+--Dica: não foque sempre na tendencia central, veja o desvio padrão dos dados
+
+Desvio padrão é o quantos os dados variam da media, e para achar o desvio padrão tempos que ter a variancia
+
+	ex: Imagine que eu tenha uma distribuição (1, 2, 9); e a média é 4.
+		variância média entre os números:
+			
+			(4-1)+(4-2)+(4-9)/3 --> subtraio cada elemento pela media e somo pelo total de elementos
+			
+			3+2-5/3 --> porem isso me resultara em 0 (observe que tenho um numero negativo na conta)
+			
+			Como que eu posso fazer para eliminar números negativos?
+				Uma maneira fácil para isso é pôr esses números ao quadrado (quadrado é sempre positivo!)
+					(4-1)^2+(4-2)^2+(4-9)^2/3
+
+					3^2+2^2+(-5)^2/3
+
+					9+4+25/3
+
+					38/3 ~= 13 --> da mai ou menos 13, porem como eu somei com numeros elevados ao quadrado, eu preciso tirar a raiz deste valor
+					
+					raiz de 13 = 3,5 --> 13 é minha VARIANCIA e 3,5 é meu DESVIO PADRÃO
+		
+Um desvio padrão pequeno indica o quê em relação aos dados?
+	Um desvio padrão pequeno indica que os dados estão próximos da média.
+	
+Um desvio padrão alto indica o quê em relação aos dados?
+	Um desvio padrão alto indica que os dados estão dispersos.
+
+Por que elevamos a diferença ao quadrado para calcular a variância?
+	Os números negativos podem influenciar no resultado final. Ao elevar ao quadrado, todos ficam necessariamente positivos.
+	
+----------------------------------------------------------------------------------------------------
+
+Praticando DESVIO PADRÃO com R
+
+
+					
+					
+					
+				
+	
+		
+		
+	
+
+
+
+	
+
+	
