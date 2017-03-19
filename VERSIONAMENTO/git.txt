@@ -1,4 +1,4 @@
--  Pensando nesse problema foram criadas ferramentas de controle de versão, e esse curso apresentará uma das mais utilizadas hoje em dia, o Git
+- Pensando nesse problema foram criadas ferramentas de controle de versão, e esse curso apresentará uma das mais utilizadas hoje em dia, o Git
 
 - Uma grande vantagem do Git é a existência de ferramentas comerciais de hospedagem de código na Web. A maior provedora de hospedagem de repositórios Git, abertos ou privados, hoje é o Github
 
