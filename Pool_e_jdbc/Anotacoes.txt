@@ -1,0 +1,9 @@
+Cada vez que eu crio um entitymanagerfactory eu inicializo meu pool de conexões, então se tiver 10 conexões irei abrir as 10 a cada novo factory que eu crio.
+
+
+fiz dois testes incluindo 400 usuarios no banco, 
+1° teste: Iniciei uma transação no inicio dos inserts e comitei apenas no final
+	Tempo para finalizar: 1s
+
+2 teste: Iniciei uma transação e comitei a mesma a cada inserção feita no banco
+	Tempo para finalizar:2s

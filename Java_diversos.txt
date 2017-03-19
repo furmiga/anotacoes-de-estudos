@@ -1,0 +1,2 @@
+tool.jar --> jar que contem a classe que compila os arquivos java(o javac chama este tool.jar por baixo dos panos)
+

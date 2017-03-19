@@ -1,0 +1,12 @@
+dicas utilitario linux "top":
+
+n limita numero de processos
+s intervalo em segundos
+c mostra linha de comando
+z adiciona cor
+M ordena decrescente por uso de memoria
+P ordena decrescente por uso de CPU (nao tenho certeza)
+1 detalha os cores da CPU
+
+obs1: "barra de espaco" atualiza imediatamente
+obs2: intervalo de 110 segundos é um ótimo numero para nao cair a conexao por inatividade
