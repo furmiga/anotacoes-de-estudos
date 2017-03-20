@@ -1,0 +1,110 @@
+Inegração continua:
+	
+Servidor de integração continua : Jenkins
+
+Aula 01
+	Inicializando:
+
+		-apos baixar o jenkins é necessario executa-lo 
+			java -jar jenkins.war --httpPort=8180
+
+		-Ao executar pela primeira vez o Jenkins, você vai reparar que ele exibe no terminal uma mensagem indicando que  é preciso fazer um setup inicial.
+			Imagem: capture_20170319_213453.png
+			
+		-Repare que na imagem acima ele mostra um password, que devemos utilizar quando estamos configurando o jenkins pela primeira vez.
+					
+		-Acesse o Jenkins através do browser, no endereço localhost:8180. Você verá algo assim:	
+			Imagem: capture_20170319_213907.png
+		
+		-basta colocar a senha que voce obteve no terminal
+		
+		-Na proxima tela selecione a primeira opção para instalar alguns pluging pré sugeridos
+		
+		-Depois da instalação dos plugins vc ira para a tela de criação de um usuario administrador e clique em Salvar
+		
+	Configurando:
+		
+		-Ja que utilizaremos o jenkins para efetuar compilar, efetuar deploy, instalar no servidor de aplicação, precisamos fazer uma configuração minima como informar onde esta a JDK, MAVEN e comandos para instalar o pacote no servidor de aplicação
+		
+		-Pra realizarmos essas configurações vamos clicar em "GERENCIAR JENKINS" e em "Global Tool Configuration"
+		
+		-Configurar JDK:
+			- Clicar em Adicionar JDK
+			- Caso você já tenha um JDK instalado pode desmarcar a opção Instalar Automaticamente
+			- Temos que decobrir o diretorio de instalação do jdk, se estiver no windows basta digitar echo %JAVA_HOME%
+			- Colar o caminho que copiamos do terminal(item acima) no campo JAVA_HOME e dar um nome pro JDK 
+		
+		-Configurar Maven
+			- clicar em Adicionar Maven
+			- Vamos desmarcar a opção para instalar o maven automaticamente e passar o caminho da nossa maquina
+			- Para descobrir o diretorio de instalação do Maven, se estiver no windows basta digitar echo %M2_HOME%
+			-  Com o caminho em mãos basta colá-lo no campo MAVEN_HOME. Após configurarmos o Maven, basta clicar em Save
+			
+	Criando um JOB:
+		
+		-Agora que configuramos o jdk eo maven precisamos pegar um projeto e fazer com que ele seja compilado, empacotado e instalado no servidor de aplicação
+		
+		-no dashboard clique em Novo job
+		
+		-na proxima tela informe o nome do job e selecione a primeir opção Contruir um projeto de software free-style e cliquem em OK
+			Imagem: capture_20170319_215707.png
+			
+		-o primeiro passo é configurar como o Jenkins irá baixar o código-fonte do repositório Git
+			
+		-vamos na aba Gerenciamente de Código Fonte e preenchê-la com o endereço do nosso repositório Git. Como queremos utilizar a própria branch master, não vamos precisar alterar esta parte.
+			Imagem: capture_20170319_220431.png
+			
+		-O nosso próximo passo é configurar o comportamento do Maven, para isto vamos visitar a aba build e na opção Adicionar passo no build selecione a opção Chamar alvos Maven de alto nível
+			Imagem: capture_20170319_215803.png
+			
+		-Informe no campo Goals os comandos clean package,sendo o clean para que ele limpe a pasta /target e faça isto completamente do zero. Já o comando package é para que ele empacote o código no war
+			Imagem: capture_20170319_215815.png
+			
+		-salve as alterações
+		
+		Deploy para o servidor de aplicação:
+			
+			- já estamos gerando o .war atraves do jenkins, mas precisamos deployar no tomcat.
+			
+			- vamos instalar o plugin do jenkins Deploy to Container para fazer isso
+			
+			- vamos visitar a página inicial do jenkins e clicar em Gerenciar Jenkins
+				Imagem: capture_20170319_221011.png
+			
+			- Depois procure por Gerencia Plugins
+				Imagem: capture_20170319_221044.png
+			
+			- E em seguida, na aba Disponíveis, utilize a busca para filtrar por Deploy to container e selecione-o na lista. Em sequência, utilize a opção instalar sem reiniciar
+			
+			-Após a instalação do plugin, volte as configurações do job do argentum-web
+			
+			-Nas opções do pós-build, selecione a opção Deploy war/ear to a container e preencha os campos como a imagem abaixo, indicando a localização do argentum-web.war, e selecionando o Tomcat 7 como container:
+				Imagem: capture_20170319_215828.png e capture_20170319_215925.png
+				
+			-Repare que ali temos que preencher as opções de login e senha de um usuário administrador do Tomcat, teremos que configurar este usuario e senha, para isso tenho que ir la na pasta conf do tomcat e abrir o arquivo tomcat-user.xml
+			
+			-Dentro da tag <tomcat-users> , crie um novo usuário como abaixo:
+				<user username="admin" password="admin" roles="manager-gui,manager-script,manager-jmx,manager-status" />
+				
+			-este usuario e senha obviamente tem que ser o mesmo que colocamos la no pós build do jenkins
+			
+			-É provável que você ainda não tenha as roles necessárias no seu arquivo de tomcat-user.xml, então aproveite para cria-las acima do seu novo usuário, ficando com tudo no final assim:
+
+				<role rolename="manager-gui"/>
+				<role rolename="manager-script"/>
+				<role rolename="manager-jmx"/>
+				<role rolename="manager-status"/>
+
+				<user username="jenkins" password="jenkins" roles="manager-gui,manager-script,manager-jmx,manager-status" />
+				
+			-Salve o arquivo tomcat-user.xml e tente rodar seu job
+		
+	Exerciocios:
+		Qual a configuração de Goals do Maven nós fizemos no Jenkins durante a criação do Job?
+			R: clean package
+			
+		Para que o Jenkins seja capaz de fazer deploy no Tomcat através do plugin Deploy to container, é preciso:
+			R: É preciso criar um usuário com as devidas permissões no Tomcat para que o plugin do Jenkins seja capaz de realizar o deploy.
+			
+		Por que, quando realizamos deploy no Tomcat através do Jenkins, o comando cp nem sempre é a melhor opção?
+			R: Porque no Windows não existe o comando cp e com certeza queremos que nosso código funcione nas mais diversas plataformas. Além disso, o Tomcat não precisa estar instalado na mesma maquina do Jenkins.
