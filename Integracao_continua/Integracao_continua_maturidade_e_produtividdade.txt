@@ -2,7 +2,7 @@ Inegração continua:
 	
 Servidor de integração continua : Jenkins
 
-Aula 01
+Aula 01 - MEU PRIMEIRO BUILD:
 	Inicializando:
 
 		-apos baixar o jenkins é necessario executa-lo 
@@ -108,3 +108,45 @@ Aula 01
 			
 		Por que, quando realizamos deploy no Tomcat através do Jenkins, o comando cp nem sempre é a melhor opção?
 			R: Porque no Windows não existe o comando cp e com certeza queremos que nosso código funcione nas mais diversas plataformas. Além disso, o Tomcat não precisa estar instalado na mesma maquina do Jenkins.
+			
+Aula 02 - BUILD CONTINO E NOTIFICACAO:
+	BUILD CONTINUO SEMPRE DEPOIS DE UM COMMIT NO GIT:
+		-Para fazermos isso, a configuração deve ser no repositório git do projeto adicionando no arquivo nomeDoSeuRepositorio/hooks/post-receive o seguinte conteúdo:
+			curl http://endereco.do.jenkins/git/notifyCommit?url="https://github.com/alura-cursos/argentum-web.git
+		
+		-Veja que esta configuração precisa do endereço remoto do nosso servidor de integração, do Jenkins. Contudo, como nosso servidor utilizado no curso roda localmente, o hook adicionando no repositório do git que chama nosso servidor de integração não funcionará. Não se preocupe, para efeitos de aprendizagem, podemos adotar outra abordagem, contudo vale lembrar que essa é a mais recomendada em ambiente de produção
+		
+	Build períódico:
+		-Uma solução é rodarmos nosso build de tempos em tempo e o Jenkins permite agendarmos a execução do nosso build em intervalos
+		
+		-Va na opção Configurar do job
+		
+		-Nela, há a opção Trigger de Builds. Nela, marcamos a check box Construir periodicamente , em seguida, na área Agenda, utilizamos a sintaxe do cron, um agendador de tarefas da plataforma Linux.
+			Imagem: capture_20170320_084837.png
+			
+		-O código acima fará com que nosso build seja realizado de quinze em quinze minutos
+		
+	Notificações por e-mail:
+		-Acesse as configurações do Jenkins em "Geranciar Jenkins -> Configurar sistema", e vamos selecionar Notificação de e-mail 
+			Imagem: capture_20170320_085209.png
+			
+		-Clicando nela, podemos entrar com os dados do nosso servidor smtp, que varia de acordo com sua empresa
+			Imagem: capture_20170320_090557.png
+		
+		-agora que configuramos o email precisamos fazer com que no processo do nosso build ele envie um email para algum destinatario caso de alguma merda no build
+		
+		-Em "Configurar" no seu job, na aba "Ações de pós-build", podemos adicionar uma ação de "Notificação de e-mail"
+			Imagem: capture_20170320_090646.png
+			
+		-Para essa notificação, precisamos indicar os destinatários. Vamos deixar marcado apenas a opção "Mandar e-mail para todas as construções instáveis". Agora temos tudo configurado.
+			Imagem: capture_20170320_090714.png
+			
+		-Perfeito, somos capazes de receber a notificação de falha, contudo o remetente deixa a desejar. Isso porque não configuramos o endereço do remetente, ou seja, do administrador do Jenkins, Para isso, vamos em "Configurar Sistema". Nele encontramos a configuração "Endereço e e-mail do administrador do sistema"
+			Imagem: capture_20170320_091212.png e capture_20170320_094217.png
+			
+			
+			
+			
+			
+		
+	
