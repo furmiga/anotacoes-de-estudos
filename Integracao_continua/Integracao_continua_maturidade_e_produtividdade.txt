@@ -99,7 +99,7 @@ Aula 01 - MEU PRIMEIRO BUILD:
 				
 			-Salve o arquivo tomcat-user.xml e tente rodar seu job
 		
-	Exerciocios:
+	Exercicios:
 		Qual a configuração de Goals do Maven nós fizemos no Jenkins durante a criação do Job?
 			R: clean package
 			
@@ -143,6 +143,34 @@ Aula 02 - BUILD CONTINO E NOTIFICACAO:
 			
 		-Perfeito, somos capazes de receber a notificação de falha, contudo o remetente deixa a desejar. Isso porque não configuramos o endereço do remetente, ou seja, do administrador do Jenkins, Para isso, vamos em "Configurar Sistema". Nele encontramos a configuração "Endereço e e-mail do administrador do sistema"
 			Imagem: capture_20170320_091212.png e capture_20170320_094217.png
+			
+	Exercicios:
+		-A melhor forma de integrar continuamente seu projeto é:
+			R: Realizar a configuração de Push Notification no repositório Git é o mais indicado. Primeiro, é um processo automático e segundo que o build só será realizado quando realmente houver mudança no projeto.
+			
+		-Com a construção periódica ocorrendo de forma automatizada, a melhor maneira de saber se um build falhou é:
+			R: A melhor forma é ser notificado pelo servidor, por exemplo, recebendo notificações de e-mail.
+			
+		-Para que se possa enviar emails através do Jenkins, é preciso:
+			R: Configurar o servidor SMTP que for mais apropriado para o seu projeto
+			
+Aula 03 - Feedback de Qualidade: Testes Automatizados:
+		Teste automatizado:
+			-Quando queremos fazer um teste manual e este teste é feito direto na aplicação, navegando entre as telas, chamamos de teste funcional manual, agora queremos um teste funcional automatizado, que é o que iremos configurar no Jenkins.
+			
+			-Mas antes vamos ver os passos que seguimos para executar o teste funcional manual:
+
+				1) Iniciar o Tomcat, pois precisamos que ele esteja rodando para fazer o deploy da aplicação.
+
+				2) Fazer o deploy do war.
+
+				3) Abrir o navegador.
+
+				4) Navegar até a página desejada.
+
+				5) Interagir com a página, isto é, preencher os campos desejados, clicar nos botões, verificar o resultado, etc.
+
+				Aqui temos 5 passos que precisamos garantir que sejam feitos na hora de executar o teste funcional automatizado.
 			
 			
 			
