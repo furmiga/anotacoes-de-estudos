@@ -171,7 +171,52 @@ Aula 03 - Feedback de Qualidade: Testes Automatizados:
 				5) Interagir com a página, isto é, preencher os campos desejados, clicar nos botões, verificar o resultado, etc.
 
 				Aqui temos 5 passos que precisamos garantir que sejam feitos na hora de executar o teste funcional automatizado.
+				
+		Configuração do JOB:
+			Configurações MAVEM:
+				-Antes de configurarmos nosso Job, é importante vermos como foram feitas as configurações do Maven
+				
+				-No pom.xml temos a tag profiles que nada mais é do que uma amalgama de configurações que serão usadas apenas se o profile for especificado para ser usado. Há um profile chamado testes-integracao, que possui toda configuração específica para o teste de integração. Há dependências do Arquillian, do Tomcat embedded entre outros
+				
+				-Na parte de build, plugin, há a dependência maven-failsafe-plugin voltado para testes de integração, diferente do surefire voltado para testes de unidade.
+				
+				-documentação do Maven sobre build lifecycle e conhecer outra fases de build do Maven (https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html)
+				
 			
+			Configuração do JOB:
+				-Clicando no Job "argentum", vamos na opção "Configurar". Na aba "Build", vamos trocar o goal package do Maven para verify
+					Imagem: capture_20170321_101811.png
+					
+				-Agora, precisamos informar um profile na hora de executar nossas goals. Fazemos isso passando o parâmetro -P seguido do nome do profile que desejamos executar(o nome do profile que foi definido no pom.xml).
+					Imagem: capture_20170321_103012.png
+					
+				-temos que passar agora o driver do chrome para que o selenium consiga fazer a navegação no browser para executar nossos testes funcionais(link p dowload do driver: https://sites.google.com/a/chromium.org/chromedriver/downloads)
+					Imagem: capture_20170321_105428.png
+			
+				-caso eu esteja em um ambiente sem interface grafica uma alternativa ao Chrome ou outros navegadores é utilizar um Browser que roda em memória como PhantomJS (PhantomJS). Podemos alterar nossa configuração para utilizá-lo:
+					Imagem: capture_20170321_110428.png
+					
+				-lembrando que os nomes dados a estes parametros são condizentes com o nomes de propriedades que tentamos buscar no proprio codigo fonte(webdriver.chrome.driver e phantomjs.binary.path)
+				
+			Entendo a configuração do Teste Funcional:
+				Imagem: capture_20170321_105807.png
+				
+	Exercicios:
+		-Considerando o projeto argentum-web utilizado no nosso treinamento, para executar os testes unitários eu preciso
+			R: Não preciso fazer nada, pois o Maven ao executar a meta package automaticamente executa os testes unitários.
+			
+		-Para executar testes funcionais de forma automatizada precisamos que o servidor Tomcat seja inicializado. Estamos fazendo isso:
+			R: Através do Arquillian, que roda integrado ao JUnit.
+			
+		-Para executar o teste funcional automatizado, acessando e interagindo com nossa página, nós utilizamos
+			R: A API Selenium WebDriver.
+			
+		-Vimos que, quando rodamos nosso ambiente de Integração Contínua em uma máquina servidora, em geral nós não dispomos de um pacote gráfico que permita abrir uma janela de Browser, nesse caso, qual implementação da API WebDriver eu devo usar?
+			R: Nós utilizamos o PhantomJSDriver.
+			
+		-PhantomJS é:
+			R: O PhantomJS é uma aplicação que permite que eu interaja com código client-side (JS, HTML, CSS) sem a necessidade de um Browser.
+		
 			
 			
 			
