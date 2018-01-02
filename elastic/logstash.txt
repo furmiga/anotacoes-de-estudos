@@ -1,0 +1,40 @@
+logstash -f logstash.conf -l log1.txt --debug
+
+
+
+arquivo de exemplo do conf 
+
+	input {
+		file {
+			path => "C:\Users\victor.dourigam\Documents\onibus\onibus.csv"
+			type => "onibus-csv"
+			start_position => "beginning"
+			
+		}	
+	} 
+	filter {  
+		csv {
+			columns => ["dataHora","ordem","linha","latitude","longitude","velocidade"]
+			separator => ","
+		}
+		date {
+		  match => [ "dataHora", "MMM dd YYYY HH:mm:ss" ]
+		}
+		mutate {
+		  convert => [ "velocidade", "float" ]
+		}
+		if (["velocidade"]==0) {
+			  drop{}
+		}
+	}
+	output {
+	   elasticsearch {
+		
+		 hosts => ["localhost:9200"]
+		 index => "devmedia"
+
+	   }
+	   stdout {
+		codec => rubydebug
+	   }
+	}
