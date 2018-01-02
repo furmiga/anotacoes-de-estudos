@@ -1,0 +1,25 @@
+Comandos Terminal
+	- pwd = mostra o diretorio atual que eu estou
+	- ls = listar arquivos e diretorios
+	- echo bem vindo = o terminal exibe a mensagem "bem vindo"
+	- echo "bem vindo" > bemvindo.txt = a saida da mensagem "bem vindo" não sera exibida no console, e sim em um arquivo de texto
+	- cat bemvindo.txt = ele ira exibir no terminal o conteudo do arquivo
+	- clear = limpa o terminal
+	- ls -l = lista os arquivos e diretorios com informações adicionais (lembrando que p eu saber se é um diretorio ele possui a letra d la no inicio das info que aparece)
+	-ls -la = lista todos os arquivos e diretorios , até mesmo os invisiveis
+
+	exercicios:
+		Porque usamos o comando pwd?
+			R: Para descobrir o diretório em que estamos atualmente
+		Execute o comando whoami no seu terminal. O que ele faz? Qual a saída?
+			R: O nome do usuário no Linux
+		Como a gente consegue listar o conteúdo de um diretório no terminal do Ubuntu?
+			R: O comando ls nos retorna o conteúdo do diretório atual.
+		Quais parâmetros passamos para o comando ls para listar todos os arquivos e diretórios, incluindo os ocultos, de uma forma mais detalhada?
+			R: Para listar os arquivos e diretórios incluindo arquivos ocultos passamos o parâmetro -a para o comando ls
+			   Para listar de forma detalha usamos o parâmetro -l
+			OU SEJA -la
+		Qual o comando necessário para imprimir no terminal o conteúdo do arquivo bemvindo.txt?
+			R: cat nomedoarquivo.txt
+		No comando cat diga qual a opção que deve ser usada para além de mostrar o conteúdo do arquivo mostrar também a linha
+			R: cat -n

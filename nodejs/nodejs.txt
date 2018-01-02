@@ -1,0 +1,27 @@
+O que é o node.js?
+	O Node.js é uma plataforma, ou um ambiente de execução para códigos javascript escrita em cima da engine de Javascript do Chrome, a V8. Ele é todo baseado em eventos e suas operações são não-bloqueantes, o que lhe confere bastante eficiência e leveza.
+	
+	para executar um programa node.js navegue até o diretório onde você criou o arquivo e o execute com o comando do node
+		node nomedoarquivo.js
+		
+	O código para escrever o primeiro server deve ficar algo assim:
+		var http = require('http');
+		var porta = 3000;
+		var ip = "localhost";
+
+		var server = http.createServer(function(req, res) {
+			console.log("Recebendo request");
+			res.writeHead(    200, {'Content-Type': 'text/html'});
+			res.end('<html><body>Request recebido!</body></html>');
+		});
+
+		server.listen(porta, ip);
+
+		console.log("Server running at http://" + ip + ":" + porta + "/");
+		
+	-Utilizamos a função require() para carregar a lib http, que já faz parte do pacote de módulos default do Node.
+	-Declaramos variáveis para armazenar os valores da porta e do ip onde queremos disponibilizar o nosso server e invocamos a função createServer(), que criar o servidor.
+	-Como parâmetro da createServer(), passamos uma função de callback, onde escrevemos o código que será executado no retorno da função, seguindo a forma de programação assíncrona imposta pelo Node.
+	-Dentro dessa função escrevemos algo no console, invocamos a função writeHead() que escreve algum cabeçalho http para o response da requisição e por fim, mandamos o html na response através da chamada da função res.end().
+	-Após essa chamada, que serviu para criar o server, foi invocada a função listen() passando o ip e a porta, que é a função que de fato deixa o server criado disponível para receber requisições.
+	-Utilizando essas configurações, a url a ser acessada é a http://localhost:3000.

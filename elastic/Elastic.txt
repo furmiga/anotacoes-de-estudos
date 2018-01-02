@@ -1,0 +1,1483 @@
+CAP 1
+	Introdução
+		o ElasticSeach acontece via RestAPI com base nos metodos do protocolo HTTP
+
+		Instalação
+			Pa a pasta ir atraves do terminal para a pasta bin, e la executar o .bat(caso seja windows) para inicializar o elastic
+				.Porta padrão dele é 9200
+			
+		Plugins
+			KOPF:  
+				A instalção de plugins no ElasticSearch é bem simples. Basta, na pasta bin, utilizar o comando plugin para sua plataforma, seguido do nome do plugin e versão. O example abaixo mostra como instalar o plugin kopf na sua versão 2.1.2 direto do repositório git lmenezes/elasticsearch-kopf.
+					./plugin install lmenezes/elasticsearch-kopf/v2.1.2
+					
+				O arquivo vai ser baixado direto de um dos repositórios disponíveis e descompactado na pasta plugins. Alternativamente, podemos baixar o kopf aqui e descompactá-lo diretamente na pasta plugins 
+					
+		ElasticSearch: Lucene e análise de dados na Nuvem
+			ElasticSearch é uma implementação de código aberto disponibilizada sob a licença Apache 2, suportada pela empresa Elasti.co que trás o poder do Lucene para o ambiente da nuvem
+			
+			Vale destacar que o ElasticSearch tem sido muito utilizado como ferramenta de análise de dados (data analytics), já que ele nos oferece a combinação de um poderoso full-text search engine com data analytics em larga escala
+			
+		
+	Primeiras interações com ElasticSearch
+		Neste exemplo utilizaremos o índice catalogo e o tipo pessoas
+			índice = base de dados
+			tipo = tabela
+			
+			Inserir umn registro novo
+				POST /catalogo/pessoas
+				{
+					"nome" : "João Silva",
+					"interesses" : ["futebol", "música", "literatura"],
+					"cidade" : "São Paulo",
+					"formação" : "Letras",
+					"estado" : "SP",
+					"país" : "Brasil"
+				}
+				imagem : captura1.png
+				
+				obs: desta forma de inserção o ID se gerado pelo proprio elastic, caso eu queira definir o id no momento do inser eu faço assim
+				POST /catalogo/pessoas/1 (onde 1 é o id que eu quero)
+					{
+						"nome" : "João Silva",
+						"interesses" : ["futebol", "música", "literatura"],
+						"cidade" : "São Paulo",
+						"formação" : "Letras",
+						"estado" : "SP",
+						"país" : "Brasil"
+					}
+				imagem : captura2.png
+			
+				A resposta nos diz, dentre outras informações, que o documento foi criado com sucesso. Veja que o identificador (atributo _id) deste documento foi gerado para nós. Caso tivéssemos utilizado a URI /catalogo/pessoas/1 e o verbo PUT, o campo _id possuiria o valor 1.
+				imagem : captura3.png
+			
+			Confiogurar replica de registro
+				Conforme começamos a adicionar documentos, o cabeçalho do kopf deve mudar de verde para a cor bege. Isso acontece devido ao fato de termos apenas um host para o ElasticSearch e um índice que requer uma réplica. Discutiremos este problema durante o curso. Por hora, basta mudarmos o numero de replica para zero conforme mostrado a seguir:
+				PUT /catalogo/_settings
+				{
+					"index" : {
+						"number_of_replicas" : 0
+					}
+				}
+			
+			Consultas
+				Para verificar quanto documentos existem em um tipo dentro de um índice, utilizamos o seguinte comando:
+					GET /<indice>/<tipo>/_count
+				Para o índice que acabamos de criar, utilizamos o comando a seguir:	
+					GET /catalogo/pessoas/_count
+					
+				Como esperado, o resultado recebido é 1:
+					{
+						"count": 1,
+						"_shards": {
+							"total": 5,
+							"successful": 5,
+							"failed": 0
+						}
+					}
+					
+				Para localizar um documento pelo seu identificador, basta utilizar o seguinte comando:
+					GET /<indice>/<tipo>/<identificator>
+					Por exemplo:
+					GET /catalogo/pessoas/1
+					
+					E o resultado, como esperado:
+						{
+							"_index": "catalogo",
+							"_type": "pessoas",
+							"_id": "1",
+							"_version": 1,
+							"found": true,
+							"_source": {
+								"nome": "João Silva",
+								"interesses": [
+									"futebol",
+									"música",
+									"literatura"
+								],
+								"cidade": "São Paulo",
+								"formação": "Letras",
+								"estado": "SP",
+								"país": "Brasil"
+							}
+						}
+						
+				Por fim, para retornar todos os documentos em de um tipo sem aplicar filtro algum, basta utilizar o comando:
+					GET /<indice>/<tipo>/_search
+					Por exemplo:
+					GET /catalogo/pessoas/_search
+					
+					Podemos ainda utilizar o parametro q para passar uma valor de filtro para o ElasticSearch:
+					GET /catalogo/pessoas/_search?q=futebol
+					
+	O que aprendemos?
+		O que é e para que serve o ElasticSearch.
+		Como fazer uma instalação básica do ElasticSeach a ser usada em uma única máquina.
+		Como instalar plugins no ElasticSearch.
+		Como utilizar um cliente REST para criar e localizar documentos por identificador, listar todos os documentos ou aplicar um valor simples para consulta.
+		Como alterar o número de réplicas de um índice.
+
+----------------------------------------------------------------------------------------------------------------------------------------		
+CAP 2
+
+	Analogia entre ElasticSearch e um banco de dados relacional
+		imagem : captura4.png
+		
+		Cuidado! O termo índice utilizado no mundo de bancos de dados relacionais, onde os registros das tabelas são organizados de forma a diminuir o tempo da busca em estruturas de dados apropriadas, não possui analogia ou correspondência com o termo índice utilizado no mundo do ElasticSearch. Basta pensar que um índice no ElasticSearch está para um database no MySQL.
+		
+
+	Entendendo HEAD e GET
+		Acessando HEAD /index/type/id é equivalente ao comando:
+			select 1 from TYPE where exists id = ID;
+			
+		Verifica, sem retornar o conteúdo, se o documento cujo identificador é ID existe para o tipo TYPE no índice index. Caso o documento exista, o código HTTP OK 200 é retornado, caso contrário, o código HTTP NOT FOUND 404 é retornado.
+		
+		GET /index/type/id é equivalente ao comando:
+			select * from TYPE where id = ID;
+		Localiza o documento e devolve o documento, caso ele exista, ou *NOT FOUND 404, caso contrário.	
+		
+			OBS: Ainda que o ElasticSearch seja orientado a documentos, é possível retornar apenas uma parte do documento. Para tal, basta adicionar ?_source=<atributo 1>,<atributo 2>. Note que podemos ainda utilizar o parâmetro pretty para retornar o documento formatado. Exemplo: GET /catalogo/pessoas/1?pretty&_source=interesses.
+			
+			OBS: o comando HEAD não tem no kopf, então se quisermos testar ele temos que usar um CURL da vida
+
+	Os métodos DELETE, PUT e POST			
+		Uma requisição DELETE /index/type/id é Equivalente ao comando:
+			delete from TYPE where id = ID;
+		Remove o documento do tipo caso ele exista, ou NOT FOUND 404, caso contrário.
+		
+
+		PUT /index/type/id
+			COMANDO PUT SERVE PARA INCLUIR UM NOVO DOCUMENTO E CASO O ID INFORMADO JA EXISTA ELE IRA SUVBSTITUIR O DOCUMENTO INTEIRO
+			então uma correlação ao mundo de BD o put seria esses dois comandos abaixo:
+				insert into TYPE (id, atributo1, atributo2) values (ID, valor1, valor2);
+				ou
+				update TYPE set atributo1 = valor1, atributo2 = valor2 where id = ID;
+			
+		POST /index/type
+			O post tambem, serve para incluir um novo documento, porem não é obrigatorio vc passar o id,  Poderíamos pensar então que o comando POST é uma espécie de insert que utiliza sequences ou um algum tipo de auto incremento.
+			Contudo, também podemos utilizar o comando POST para atualizar um documento existente assim como o comando PUT. A diferença é que POST nos permite atualização parcial de documentos. Por exemplo:
+				Ex:
+					POST /catalogo/pessoas/1/_update
+					{
+						"doc": {
+							"nome": "João Pedro"
+						}
+					}
+				Note que, neste caso, o uso de "doc" é obrigatório.
+		
+		Importante: Uma vez que um documento é criado em uma instância do ElasticSearch, este documento torna-se imutável. No caso de uma atualização a um documento existente, por exemplo como fizemos com o método POST, uma nova versão do documento é criada. Se repararmos bem nas respostas recebidas, notaremos os atributos _created e _version. A resposta para a criação de um novo documento possui _created = true e _version = 1. A resposta para atualizações possui _created = false e _version será a versão anterior do documento acrescida de 1.
+		
+
+	Shards e Réplicas
+		Imagem: captura5
+		
+		Como temos diversas shards, podemos criar cópias, chamadas de réplicas, de uma mesma shard e armazená-las em outras máquinas. Isso funciona como uma espécie de backup dos dados, com uma pequena ressalva: réplicas são atualizadas constantemente e podem ser utilizadas para leitura durante a execução de consultas. Existe dois tipos de shards no ElasticSeach:
+			- Shard primária (primary shards): é a shard onde as operações de escrita como criação, atualização ou remoção de um documento acontece primeiro.
+			- Shard réplica (replica shard): é a shard que, uma vez que a operação de escrita tenha sido concluída com sucesso na sua respectiva shard primária, recebe a mesma operação para que ela seja replicada. A operação só será confirmada para o cliente quando todas as réplicas confirmarem a replicação. Logo, quando recebemos o HTTP OK para uma operação de escrita, sabemos que a informação esta segura em todas as réplicas.
+			
+		
+		Importante: O número de shards é definido no momento da criação do índice e não pode ser alterado. O número de réplicas também é definido no momento da criação do índice, porém pode ser alterado com o passar do tempo. É muito importante escolher bem o número de shards durante a criação do índice. A escolha deste número depende do volume de informações que queremos armazenar nas shards. Em geral, queremos shards com alguns gigabytes(até 50gb no max).
+	
+
+	Exercicios:
+		Para atualizar, modificar o atributo nome do documento de id 1 para Douglas Quintanilha, que comando e URI devemos utilizar?
+			R:
+				POST /catalogo/pessoas/1/_update
+				{
+					"doc": {
+						"nome": "Douglas Quintanilha"
+					}
+				}
+				
+				Para atualizar somente um ou mais atributos, devemos utilizar a sintaxe acima, passar os atributos, juntamente com os seus novos valores, dentro de um "doc". Além disso, como queremos somente atualizar o documento, temos que adicionar o \_update na URI e utilizar o comando POST.
+				
+		Para remover o documento de id 23, qual comando e URI devemos utilizar?
+			R: DELETE /catalogo/pessoas/23
+			
+		Qual seria a quantidade de shards necessária para o nosso índice?
+			R: Este número depende do volume de informações que serão armazenadas nas shards, logo esse volume é dividido pela quantidade de shards desejada, vendo assim o quão grande cada shard será.
+			Na prática, isso significa que muitas shards auxiliam na hora da escrita, mas o desempenho pode ser afetado na hora da leitura, pois uma busca terá que ler muitas shards para confirmar se as informações foram encontradas ou não, por exemplo. Por isso que depende da frequência em que se escreve e que se lê na shard, mas uma shard não deve exceder o volume de 50 gb.
+			
+		Imagine duas pessoas diferentes querendo atualizar um documento em especifico de formas diferentes. 
+			R:ElasticSearch possui um controle de versionamento baseado em lock otimista. Basicamente funciona assim. Quando utilizado este mecanismo, uma atualização só ocorre com sucesso quando a versão do documento no ElasticSearch é a mesma da versão do documento indicado na requisição. Por exemplo:
+
+			PUT /catalogo/pessoas/1?version=1
+			{
+				… atributos a serem atualizados
+			}
+			Caso alguém já tenha atualizado o documento, a versão terá sido incrementada para 2 e nossa requisição falhará. O código HTTP de resposta será 409 Conflict e a mensagem de erro será algo como:
+
+			{
+				"error" : "VersionConflictEngineException[[catalogo][2] [pessoas][1]: version conflict, current [2], provided [1]]",
+				"status" : 409
+			}
+	
+	O que aprendemos?
+		O que é um índice e um tipo.
+		Como utilizar a API Rest para operações de criação, atualização, remoção e verificação de existência de documentos no ElasticSearch.
+		A analogia entre ElasticSearch e um banco de dados relacionais.
+		O que são shards, réplicas e qual a sua importância.
+		
+----------------------------------------------------------------------------------------------------------------------------------------		
+CAP 3
+
+	Buscas com campo _all
+
+		Quando adicionamos documentos a um índice, o ElasticSeach combina os valores de todos os campo em um único campo chamado _all. Pense em pegar todos os valores, convertê-los para string e concatená-los. Por exemplo, para o documento:
+		
+		{
+			"nome" : "João Silva",
+			"interesses" : ["futebol", "música", "literatura"],
+			"cidade" : "São Paulo",
+			"formação" : "Letras",
+			"estado" : "SP",
+			"país" : "Brasil"
+		}
+		Teríamos algo como:
+			"João Silva futebol música literatura São Paulo Letras SP Brasil".
+		
+		Caso o nome do campo não seja informado explicitamente para a API _search junto ao parâmetro q, a busca será executada utilizando o campo _all. Logo, _search?q=futebol é equivalente a _search?q=_all:futebol.
+		
+	Buscas com parâmetros
+		Caso queremos nos limitar ao campo interesses, bastaria fazer:
+			_search?q=interesses:futebol
+			Repare a sintaxe campo:termo na busca. Se quisermos buscar com mais de um campo, basta usar o &:
+			_search?q=interesses:futebol&cidade:rio	
+			
+	Definindo a quantidade de resultados
+		Por padrão, o ElasticSearch retorna até 10 documentos.
+		
+		Assim como em bancos de dados, podemos indicar tanto quando registros queremos retornar como o ponto de início:
+			GET /catalogo/pessoas/_search?size=50
+		Para indicar o primeiro basta fazer como no exemplo a seguir:
+			GET /catalogo/pessoas/_search?size=50&from=10
+			
+		Importante: Paginação deve ser usada apenas para pequenos volumes de dados, como alguns poucos milhares. Para volumes maiores, devemos utilizar a abordagem da API scroll.	
+
+	Cabeçalho retornado de uma busca
+		Veja que para as consultas executadas até o momento, recebemos resultados com o seguinte conteúdo:
+		{
+		  "took" : 59,
+		  "timed_out" : false,
+		  "_shards" : {
+			"total" : 5,
+			"successful" : 5,
+			"failed" : 0
+		  },
+		  "hits" : {
+			"total" : 6,
+			"max_score" : 1.0,
+			"hits" : [ … resultados ...]
+		}
+		
+		Vamos ao significados:
+			took: duração da consulta em milisegundos.
+			
+			time_out: valor boleano indicando se a consulta foi abortada por limite de tempo ou não.
+			
+			_shards.total: número de shards envolvidas na busca.
+			
+			_shards.successful: número de shards que não apresentaram falha durante a busca.
+			
+			_shards.failed: número de shards que apresentaram falha durante a busca. Note que o resultado pode não apresentar documentos presentes nas shards que falharam.
+			
+			hits.total: quantidade de documentos encontrados.
+			
+			hits.max_score: valor máximo de score entre o documentos encontrados. O valor 1.0 significa que o valor da busca foi encontrado totalmente.
+			
+			hits.hits: os documentos encontrados.
+
+	Exercicios:
+		Qual das alternativas abaixo é equivalente a seguinte busca _search?q=futebol
+			R:Quando omitimos um campo específico na busca, o Elastic Search assume que queremos buscar no campo _all, logo a resposta correta é:
+				_search?q=_all:futebol
+				
+		Qual das opções abaixo realiza uma busca pelo termo futebol no campointeresses mas limitando os campos cidade apenas para o rio ?
+			R: _search?q=interesses:futebol&cidade:rio
+		
+		Qual das alternativas abaixo faz uma busca por futebol , no campo interesses, mas retornando inicialmente apenas 50 registros?	
+			R: _search?q=interesses:futebol&size=50
+		
+	API Scroll
+		Quando utilizamos paginação simples, temos que tomar cuidado para não causarmos instabilidade no cluster. Caso solicitemos 10.000 registros, todas as shards participantes na consulta podem retornar esta quantidade. Por exemplo, caso tenhamos 3 shards com 100.000 documentos em cada e pedimos os primeiros 10.000 resultados, o nó coordenador terá de processar 30.000 documentos, executar a ordenação e pegar os primeiros 10.000.
+
+		Para detalhes, veja este link:
+
+		https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-scroll.html		
+
+	O que aprendemos?
+		O campo _all e a como ele é utilizado.
+		Podemos especificar o campo na busca usando campo:termo.
+		ElasticSearch retorna 10 resultados por padrão.
+		Entender as estatísticas que são parte da resposta de requisições de busca, como tempo de resposta e hits.
+----------------------------------------------------------------------------------------------------------------------------------------		
+CAP 4
+
+	Tipos predefinidos
+		Por padrão, quando criamos documentos no ElasticSearch em índices e tipos que não foram previamente criados, o próprio ElasticSeach analisa o primeiro documento recebido e infere os tipos de dados. Para olharmos o que foi inferido, basta utilizamos a API _mapping:
+			GET catalogo/_mapping/pessoas
+		O resultado esperado é:
+		{
+		  "catalogo" : {
+			"mappings" : {
+			  "pessoas" : {
+				"properties" : {
+				  "cidade" : {
+					"type" : "string"
+				  },
+				  "estado" : {
+					"type" : "string"
+				  },
+				  "formação" : {
+					"type" : "string"
+				  },
+				  "interesses" : {
+					"type" : "string"
+				  },
+				  "nome" : {
+					"type" : "string"
+				  },
+				  "país" : {
+					"type" : "string"
+				  }
+				}
+			  }
+			}
+		  }
+		}	
+		
+		Importante: Ainda que novos documentos possam ter novos atributos que não foram previamente mapeados, mapeamentos para atributos já existentes não podem ser alterados.
+		
+	Inferência de tipos
+		amos adicionar o campo nascimento no registro de id 1.
+		PUT /catalogo/pessoas/1
+		{
+		  "nome": "Patrick von Steppat 2",
+		  "interesses": [
+			"computação",
+			"culinária",
+			"cinema"
+		  ],
+		  "cidade": "Rio de Janeiro",
+		  "formação": "Gastronomia",
+		  "estado": "RJ",
+		  "país": "Brasil",
+		  "nascimento": "1984-10-03"
+		}
+		
+		Se olharmos o tipo e formato inferido para o atributo nascimento, teremos:
+			"nascimento": {
+			"type": "date",
+			"format": "strict_date_optional_time||epoch_millis"
+			}	
+		Repare o tipo strict_date_optional_time||epoch_millis que automaticamente foi interferido para o atributo nascimento.
+		
+	Tipos suportados no ElasticSearch
+		Os tipos básico (também chamados de core) são: - Para texto: string - Para números: long, integer, short, byte, double e float. - Para datas: date. O formato padrão é strict_date_optional_time||epoch_millis, que signfica data com hora como opcional ou valor epoch em milisegundos.
+
+		Note que o formato da data pode ser customizado para garantir consistência no dado armazenado para buscas e outras operações.
+		Mais detalhes em https://www.elastic.co/guide/en/elasticsearch/reference/current/date.html.
+		
+		Link com documentação dos tipos suportados pelo elastic
+			https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html.
+	
+		
+	Caso eu queira colocar uma propriedade nova no meu tipo, sem incluir um registro novo para isso eu posso fazer da sequinte maneira 
+		Faça um PUT para /catalogo/_mapping/pessoas com o seguinte JSON:
+		{
+			"properties": {
+				"pulo": {
+					"type": "integer"
+				}
+			}
+		}
+	
+	O que aprendemos?
+		Como verificar os mappings para nossos documentos.
+		Tipos de dados existentes do ElasticSearch.
+		Inferência de tipos pelo ElasticSearch.
+		
+----------------------------------------------------------------------------------------------------------------------------------------		
+CAP 5
+	Full-text search e analyzers
+		Analyzers são algoritmos fundamentais para o que chamamos de full-text search, ou busca de texto cheio. Vale destacar um conceito fundamental em relação a busca de texto cheio. Quando fazemos buscas exatas o resultado é binário, ou seja, "sim" caso o termo procurado exista da maneira que foi informado ou "não", caso contrário. No caso de busca de texto cheio, a ideia é diferente. Ao invés de perguntarmos "Este documento possui exatamente os termos utilizados na busca", estamos interessados em "O quão bem este documento casa com os termos da busca".
+		
+		Analyzers são utilizados para processar nossos documentos e construir uma estrutura comum no mundo de buscas chamada de índice invertido. De maneira simplista, podemos pensar nos analyzers como algoritmos que processam o texto e geram entradas relevantes com os termos do documento, possivelmente com sinônimos, no índice invertido. Estas entradas possuem ponteiros para o documento. Os termos consultados também passam pelos mesmos algoritmos e os termos processados são utilizados para fazer a busca contra o índice invertido. Este processo ficará bem claro em alguns instantes.
+		
+	Analyzers existentes
+		ElasticSearch possui diversos analyzers pré-definidos que podem ser associados à atributos durante a criação do mapping para o tipo. Destacamos 4 analyzers que devemos conhecer.
+			
+			Analyzer padrão: 
+				Este é o analyzer padrão usado pelo ElasticSearch e em geral funciona bem independente do idioma. Ele funciona quebrando o texto em palavras removendo pontuações e passando todo conteúdo para letras minúsculas. Números existentes no texto são mantidos. Por exemplo: "Eu nasci a 10 mil (sim, 10 mil) anos atrás" gera as seguintes entradas "eu", "nasci", "a", "10", "mil", "sim", "10", "mil", "anos", "atrás".
+
+			Analyzer simples: 
+				Quebra o texto em tudo o que não seja uma letra e passando todo o texto para letras minúsculas. Como números não são letras, eles não geram entradas. E.g.: "Eu nasci a 10 mil (sim, 10 mil) anos atrás" gera as seguintes entradas "eu", "nasci", "a", "mil", "sim", "mil", "anos", "atrás".
+
+			Analyzer de espaço em branco: 
+				Quebra o texto por espaços em branco. Não há alteração na caixa das letras. Por exemplo: "Eu nasci a 10 mil (sim, 10 mil) anos atrás" gera as seguintes entradas "Eu", "nasci", "a", "10", "mil", "(sim", "10", "mil)", "anos", "atrás".
+
+			Analyzers específicos para idiomas: 
+				São analyzers que quebram o texto assim como o analyzer padrão, porém são capazes de aplicar peculiaridades do idioma e melhorar a geração das entradas para um idioma em específico. Técnicas como singularização dos termos, remoção de palavras que não possuem relevância para o resultado, como palavras comuns do idioma e uso da palavra na sua forma mais raíz (conhecido como stemming), são aplicadas.	
+				
+		Como passo adicional, analyzers ainda podem ser customizados caso necessário. Para mais detalhes veja https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-analyzers.html
+		
+	Utilizando a API _analyze
+		Vamos comparar os analyzers standard, whitespace, simple e portuguese para a frase "Eu nasci a 10 mil (sim, 10 mil) anos atrás".
+		
+		Nossa requisição será:
+			GET /_analyze?analyzer=standard&text=Eu+nasci+a+10+mil+(sim,+10+mil)+anos+atrás
+		E o resultado:
+			{
+			  "tokens": [
+				{
+				  "token": "eu",
+				  "start_offset": 0,
+				  "end_offset": 2,
+				  "type": "<ALPHANUM>",
+				  "position": 0
+				},
+				{
+				  "token": "nasci",
+				  "start_offset": 3,
+				  "end_offset": 8,
+				  "type": "<ALPHANUM>",
+				  "position": 1
+				},
+				{
+				  "token": "a",
+				  "start_offset": 9,
+				  "end_offset": 10,
+				  "type": "<ALPHANUM>",
+				  "position": 2
+				},
+				{
+				  "token": "10",
+				  "start_offset": 11,
+				  "end_offset": 13,
+				  "type": "<NUM>",
+				  "position": 3
+				},
+				{
+				  "token": "mil",
+				  "start_offset": 14,
+				  "end_offset": 17,
+				  "type": "<ALPHANUM>",
+				  "position": 4
+				},
+				{
+				  "token": "sim",
+				  "start_offset": 19,
+				  "end_offset": 22,
+				  "type": "<ALPHANUM>",
+				  "position": 5
+				},
+				{
+				  "token": "10",
+				  "start_offset": 24,
+				  "end_offset": 26,
+				  "type": "<NUM>",
+				  "position": 6
+				},
+				{
+				  "token": "mil",
+				  "start_offset": 27,
+				  "end_offset": 30,
+				  "type": "<ALPHANUM>",
+				  "position": 7
+				},
+				{
+				  "token": "anos",
+				  "start_offset": 32,
+				  "end_offset": 36,
+				  "type": "<ALPHANUM>",
+				  "position": 8
+				},
+				{
+				  "token": "atrás",
+				  "start_offset": 37,
+				  "end_offset": 42,
+				  "type": "<ALPHANUM>",
+				  "position": 9
+				}
+			  ]
+			}
+			
+		Note cada token e seu tipo.
+		
+		Vejamos agora a diferença dos analyzers standard e portuguese para o texto "Música". Para o analyzer standard, utilizamos a seguinte requisição:
+			GET /_analyze?analyzer=standard&text=Música
+		E o resultado obtido é:	
+			{
+			  "tokens": [
+				{
+				  "token": "música",
+				  "start_offset": 0,
+				  "end_offset": 6,
+				  "type": "<ALPHANUM>",
+				  "position": 0
+				}
+			  ]
+			}
+			
+		Já para o analyzer portuguese, utilizamos a seguinte requisição:
+			GET /_analyze?analyzer=portuguese&text=Música
+		E obtemos o seguinte resultado:
+			{
+			  "tokens": [
+				{
+				  "token": "music",
+				  "start_offset": 0,
+				  "end_offset": 6,
+				  "type": "<ALPHANUM>",
+				  "position": 0
+				}
+			  ]
+			}
+		
+		Repare na diferença dos tokens gerados. Enquanto o analyzer padrão gerou o token música, o analyzer para lingua portuguesa gerou o token music. Como até o momento usamos apenas o analyzer padrão, fica claro o motivo de nossas buscas não terem funcionado da forma flexível como foi prometido. Quando utilizando o termo musica anteriormente, este termo, mesmo após o processamento pelo analyzer, continua sendo musica e não música, como a entrada criada no índice invertido. Vamos corrigir essa inconveniência.
+		
+	Recriando nosso índice com analyzers
+		 Basta criamos um índice com o seguinte mapping. Note que estão definindo o analyzer portuguese também para o campo _all. Tecnicamente falando, esta alteração já seria suficiente para resolver a inconveniência que estamos enfrentando. Contudo, estamos alterando os analyzers de alguns atributos para estender o suporte a buscas em atributos específicos.
+		 
+			PUT /catalogo_v2
+
+			{
+			  "settings": {
+				"index": {
+				  "number_of_shards": 3,
+				  "number_of_replicas": 0
+				}
+			  },
+			  "mappings": {
+				"pessoas_v2": {
+				  "_all": {
+					"type": "string",
+					"index": "analyzed",
+					"analyzer": "portuguese"
+				  },
+				  "properties": {
+					"cidade": {
+					  "type": "string",
+					  "index": "analyzed",
+					  "analyzer": "portuguese"
+					},
+					"estado": {
+					  "type": "string"
+					},
+					"formação": {
+					  "type": "string",
+					  "index": "analyzed",
+					  "analyzer": "portuguese"
+					},
+					"interesses": {
+					  "type": "string",
+					  "index": "analyzed",
+					  "analyzer": "portuguese"
+					},
+					"nome": {
+					  "type": "string",
+					  "index": "analyzed",
+					  "analyzer": "portuguese"
+					},
+					"país": {
+					  "type": "string",
+					  "index": "analyzed",
+					  "analyzer": "portuguese"
+					}
+				  }
+				}
+			  }
+			}
+			
+		 Note que utilizamos o sufixo _v2 tanto no nome do índice quanto no nome do tipo, porém o objetivo é apenas evitar alterações no primeiro índice que criamos.
+		 
+	Índice invertidos
+		Caso queira entender melhor como a busca de termos funciona quando utilizamos um índice invertido, veja o link: https://www.elastic.co/guide/en/elasticsearch/guide/current/inverted-index.html
+		
+	Exercicios:
+		Criando um indice novo informando para cada propriedade o seu proprio analyzer
+			R: PUT para /catalogo_v2 com o contéudo 
+				{
+				  "settings": {
+					"index": {
+					  "number_of_shards": 3,
+					  "number_of_replicas": 0
+					}
+				  },
+				  "mappings": {
+					"pessoas_v2": {
+					  "_all": {
+						"type": "string",
+						"index": "analyzed",
+						"analyzer": "portuguese"
+					  },
+					  "properties": {
+						"cidade": {
+						  "type": "string",
+						  "index": "analyzed",
+						  "analyzer": "portuguese"
+						},
+						"estado": {
+						  "type": "string"
+						},
+						"formação": {
+						  "type": "string",
+						  "index": "analyzed",
+						  "analyzer": "portuguese"
+						},
+						"interesses": {
+						  "type": "string",
+						  "index": "analyzed",
+						  "analyzer": "portuguese"
+						},
+						"nome": {
+						  "type": "string",
+						  "index": "analyzed",
+						  "analyzer": "portuguese"
+						},
+						"país": {
+						  "type": "string",
+						  "index": "analyzed",
+						  "analyzer": "portuguese"
+						}
+					  }
+					}
+				  }
+				}
+			Na criação do índice, indicamos a configuração de cada atributo que queremos que seja analizado, e em seguida dizemos qual tipo do analizador iremos usar.
+
+			Repare também que fizemos configurações individuais em cada atributo, nos permitindo escolher qual analizador isoladamente, e até mesmo deixando de usar o analizer no caso do atributo estado.
+			
+			Agora com os anaylizers configurados eu posso ter as buscas mais flexivel
+			Logo, quando pesquisarmos por musica, teremos como resultado documentos que também contenham as palavras música, Música, Musica, e por aí vai.
+		
+		
+		
+		O padrão do ElasticSearch quando realizar as buscas, é de buscar documentos que contenham um termo ou outro. Por exemplo:
+		/catalogo_v2/pessoas_v2/_search?q=musica+brasil
+		Logo, o resultado dessa busca será documentos que contenham uma musica ou brasil. No caso do novo índice, sem distinção entre acentos, letras maiúsculas ou minúsculas.
+		Mas se quisermos os documentos que contenham os dois termos, como a URI deverá ser?
+			R: /catalogo_v2/pessoas/_search?q=musica+AND+brasil
+				 Obs: Atenção para AND em caixa alta, se for em caixa baixa, o ElasticSearch interpretará como mais um termo a ser buscado.
+		
+		
+			
+	O que aprendemos?
+		Como a busca exata e a busca de texto cheio são diferentes.
+		O que são e como usar os analyzers para incrementar nossas buscas.
+		Como verificar como um analyzer vai indexar um determinado texto.
+		Como alterar o analyzer do campo _all do padrão para portuguese e melhorar nossas buscas.
+		
+	Obs: 
+		podemos configurar quais atributos vão ou não para o camp _all Para saber mais, acesse:https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-all-field.html
+	
+		Objetos aninhados são mapeados de maneira semelhante a objetos não aninhados. Basta utilizar como tipo de dados object e definir as propriedades. Esta abordagem funciona de forma recursiva.
+		Para saber mais, acesse:
+		https://www.elastic.co/guide/en/elasticsearch/guide/current/complex-core-fields.html
+		
+----------------------------------------------------------------------------------------------------------------------------------------		
+CAP 6
+	analyzers customizados
+		Antes de criamos nosso analyzer customizado com sinônimos, vamos dar uma breve olhada no analyzer portuguese que utilizamos anteriormente:
+			{
+			  "settings": {
+				"analysis": {
+				  "filter": {
+					"portuguese_stop": {
+					  "type":       "stop",
+					  "stopwords":  "_portuguese_" 
+					},
+					"portuguese_keywords": {
+					  "type":       "keyword_marker",
+					  "keywords":   [] 
+					},
+					"portuguese_stemmer": {
+					  "type":       "stemmer",
+					  "language":   "light_portuguese"
+					}
+				  },
+				  "analyzer": {
+					"portuguese": {
+					  "tokenizer":  "standard",
+					  "filter": [
+						"lowercase",
+						"portuguese_stop",
+						"portuguese_keywords",
+						"portuguese_stemmer"
+					  ]
+					}
+				  }
+				}
+			  }
+			}
+			
+		Repare que utilizamos diversos filters na parte de análise. Um synonym nada mais é do que um filtro onde definimos o mapa de sinônimos. Vejamos o exemplo a seguir:
+		
+			{
+			  "settings": {
+				"analysis": {
+				  "filter": {
+					"filtro_de_sinonimos": {  (1)
+						"type": "synonym",
+						"synonym": [
+							"esporte,futebol,society,futeba,pelada" (2)
+						]
+					}
+				  },
+				  "analyzer": {
+					"sinonimos": {
+					  "tokenizer":  "standard",
+					  "filter": [
+						"lowercase",
+						"filtro_de_sinonimos"  (3)
+					  ]
+					}
+				  }
+				}
+			  }
+			}
+			
+			Onde:
+
+			(1) Definimos o um filtro do tipo synonym.
+
+			(2) Definimos à lista de palavras que são consideradas semelhantes (mais sobre isso a seguir).
+
+			(3) Aplicamos o filtro de sinônimos criado no processo de análise da informação.
+			
+		Quando uma das palavras é encontrada na lista de sinônimos, ela é substituída por todas as palavras que estão na lista. Quando isso acontece durante a fase de indexação de documentos, os sinônimos são adicionados ao índice invertido que é criado para busca. Vale chamar a atenção que, esta é uma abordagem expansionista e pode colaborar para um "inchaço" do índice.
+		
+	Interagindo com sinônimos
+		Vamos criar um novo índice com as configurações a seguir:
+			PUT /indice_com_sinonimo
+			{
+			  "settings": {
+				"index": {
+				  "number_of_shards": 3,
+				  "number_of_replicas": 0
+				},
+				"analysis": {
+				  "filter": {
+					"filtro_de_sinonimos": {
+						"type": "synonym",
+						"synonyms": [
+							"esporte,futebol,society,futeba,pelada"
+						]
+					}
+				  },
+				  "analyzer": {
+					"sinonimos": {
+					  "tokenizer":  "standard",
+					  "filter": [
+						"lowercase",
+						"filtro_de_sinonimos"
+					  ]
+					}
+				  }
+				}
+			  }
+			}
+		Vamos executar a seguinte consulta para verificar os tokens marcados na position 4:
+			GET /indice_com_sinonimo/_analyze?analyzer=sinonimos&text=eu+gosto+de+joga
+			
+		Usamos nosso novo índice (indice_com_sinonimo) passando como parâmetro o nome do analyzer e o texto para analisar. Como resultado devemos receber:
+			{
+			  "tokens": [
+				{
+				  "token": "eu",
+				  "start_offset": 0,
+				  "end_offset": 2,
+				  "type": "<ALPHANUM>",
+				  "position": 0
+				},
+				{
+				  "token": "gosto",
+				  "start_offset": 3,
+				  "end_offset": 8,
+				  "type": "<ALPHANUM>",
+				  "position": 1
+				},
+				{
+				  "token": "de",
+				  "start_offset": 9,
+				  "end_offset": 11,
+				  "type": "<ALPHANUM>",
+				  "position": 2
+				},
+				{
+				  "token": "jogar",
+				  "start_offset": 12,
+				  "end_offset": 17,
+				  "type": "<ALPHANUM>",
+				  "position": 3
+				},
+				{
+				  "token": "society",
+				  "start_offset": 18,
+				  "end_offset": 25,
+				  "type": "<ALPHANUM>",
+				  "position": 4
+				},
+				{
+				  "token": "esporte",
+				  "start_offset": 18,
+				  "end_offset": 25,
+				  "type": "SYNONYM",
+				  "position": 4
+				},
+				{
+				  "token": "futebol",
+				  "start_offset": 18,
+				  "end_offset": 25,
+				  "type": "SYNONYM",
+				  "position": 4
+				},
+				{
+				  "token": "futeba",
+				  "start_offset": 18,
+				  "end_offset": 25,
+				  "type": "SYNONYM",
+				  "position": 4
+				},
+				{
+				  "token": "pelada",
+				  "start_offset": 18,
+				  "end_offset": 25,
+				  "type": "SYNONYM",
+				  "position": 4
+				}
+			  ]
+			}
+	
+	Refinando nossos sinônimos
+		Podemos melhorar os resultados com sinônimos utilizando uma abordagem inversa a expansionista. Ao invés da sintaxe
+			"esporte,futebol,basquete,esporte,society => esporte"
+		Podemos ler a configuração acima como "os termos esporte, futebol, basquete, esporte e society 'significam' esporte, mas esporte não significa estes termos".
+		
+		Podemos ainda utilizar a abordagem de expansão de gênero como mostrado a seguir:
+			"esporte => futebol,basquete,society,volei"
+			"society => society,futebol"
+			"futebol => futebol,society"
+		Podemos ler a configuração acima como "o termo esporte significa futebol, basquete, society e volei, mas nenhum destes termos significa esporte". Este tipo de configuração nos permite buscar pelo esporte e encontrar documentos com as palavras futebol ou society, ou mesmo volei, mas quando buscamos pelo termo futebol, encontraremos documentos com futebol e society, mas não com volei.
+		
+		Importante: Tanto na abordagem contracionista quando na expansão de gênero, a análise do sinônimo precisa ser aplicada tanto durante a indexação do documento quando no momento da busca. Veremos como fazê-lo a seguir.
+		
+		Vamos criar um novo índice com as configurações a seguir:
+			PUT /indice_com_sinonimo_2
+			{
+			  "settings": {
+				"index": {
+				  "number_of_shards": 3,
+				  "number_of_replicas": 0
+				},
+				"analysis": {
+				  "filter": {
+					"filtro_de_sinonimos": {
+						"type": "synonym",
+						"synonyms": [
+					"futebol => futebol,society",
+					"society => society,futebol",
+					"esporte => esporte,futebol,society,volei,basquete"
+						]
+					}
+				  },
+				  "analyzer": {
+					"sinonimos": {
+					  "tokenizer":  "standard",
+					  "filter": [
+						"lowercase",
+						"filtro_de_sinonimos"
+					  ]
+					}
+				  }
+				}
+			  }
+			}
+		Executando a seguinte seguinte consulta:
+			GET /indice_com_sinonimo_2/_analyze?analyzer=sinonimos&text=futebol
+		Temos o seguinte resultado:
+			{
+			  "tokens": [
+				{
+				  "token": "futebol",
+				  "start_offset": 0,
+				  "end_offset": 7,
+				  "type": "SYNONYM",
+				  "position": 0
+				},
+				{
+				  "token": "society",
+				  "start_offset": 0,
+				  "end_offset": 7,
+				  "type": "SYNONYM",
+				  "position": 0
+				}
+			  ]
+			}
+	
+	Podemos também fazer uso do atributo synonyms_path para indicar o arquivo de onde os sinônimos serão lidos. O caminho do arquivo deve ser ou relativo ao diretório de configuração (config) do Elasticsearch ou um caminho absoluto para o arquivo.
+		R: Para mais detalhes, você pode acessar o link: https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-synonym-tokenfilter.html
+	
+	É razoável afirmar que todos nós, uma vez na vida, já recebemos sugestões qual fazemos busca no Google como "Você quis dizer…?". E em geral, quando recebemos esta sugestão, cometemos algum erro de digitação. ElasticSearch também dá suporte a tal tipo de sugestão através da busca Fuzzy.
+		R:Para saber mais detalhes, acesse o link a seguir: https://www.elastic.co/guide/en/elasticsearch/guide/current/fuzzy-matching.html
+		
+	O que aprendemos?
+		Como funciona o suporte a sinônimos no ElasticSearch.
+		A anatomia de um analyzer.
+		Como criar um analyzer customizado para dar suporte a sinônimos.
+		Como testar um analyzer customizado.
+		As diferentes abordagens para o uso de sinônimos.
+		
+----------------------------------------------------------------------------------------------------------------------------------------		
+CAP 7
+	Mais sinônimos
+		"futebol => futebol,society",
+		"society => society,futebol",
+		"volei,voleibol,volleyball",
+		"esport => esport,futebol,society,volei,basquet",
+		"exat => exat,matematic,fisic,computaca",
+		"arte => arte,pintur,teatr,music,cinem"
+		
+	Vamos criar um novo índice catalogo_v3 e configurar nossos sinônimos:
+		PUT /catalogo_v3
+		{
+		  "settings": {
+			"index": {
+			  "number_of_shards": 3,
+			  "number_of_replicas": 0
+			},
+			"analysis": {
+			  "filter": {
+				 "portuguese_stop": {
+				  "type":       "stop",
+				  "stopwords":  "_portuguese_" 
+				},
+				"portuguese_stemmer": {
+				  "type": "stemmer",
+				  "language": "light_portuguese"
+				},
+				"filtro_de_sinonimos": {
+				  "type": "synonym",
+				  "synonyms": [
+					"futebol => futebol,society",
+					"society => society,futebol",
+					"volei,voleibol,volleyball",
+					"esport => esport,futebol,society,volei,basquet",
+					"exat => exat,matematic,fisic,computaca",
+					"arte => arte,pintur,teatr,music,cinem"
+				  ]
+				}
+			  },
+			  "analyzer": {
+				"sinonimos": {
+				  "tokenizer": "standard",
+				  "filter": [
+					"lowercase",
+					"portuguese_stop",
+					"portuguese_stemmer",
+					"filtro_de_sinonimos"
+				  ]
+				}
+			  }
+			}
+		  },
+		  "mappings": {
+			"pessoas": {
+			  "_all": {
+				"type": "string",
+				"index": "analyzed",
+				"analyzer": "portuguese"
+			  },
+			  "properties": {
+				"cidade": {
+				  "type": "string",
+				  "index": "analyzed",
+				  "analyzer": "portuguese"
+				},
+				"estado": {
+				  "type": "string"
+				},
+				"formação": {
+				  "type": "string",
+				  "index": "analyzed",
+				  "analyzer": "portuguese"
+				},
+				"interesses": {
+				  "type": "string",
+				  "index": "analyzed",
+				  "analyzer": "portuguese",
+				  "search_analyzer": "sinonimos"
+				},
+				"nome": {
+				  "type": "string",
+				  "index": "analyzed",
+				  "analyzer": "portuguese"
+				},
+				"país": {
+				  "type": "string",
+				  "index": "analyzed",
+				  "analyzer": "portuguese"
+				}
+			  }
+			}
+		  }
+		}
+		
+		Usamos "search_analyzer": "sinonimos" para indicar que, durante buscas no atributo interesses, queremos aplicar o analyzer sinonimos.
+		
+		O analyzer sinonimos utiliza filtros existentes e filtros que copiamos do analyzer portuguese, deste modo simulamos o mesmo comportamento do analyzer e ainda adicionamos os sinônimos na lista.
+		
+		Para testar nossa estratégia, vamos adicionar os registros a seguir:
+			POST /catalogo_v3/pessoas/1
+			{
+				"nome": "João Silva",
+				"interesses": ["futebol", "música", "literatura"],
+				"cidade": "São Paulo",
+				"formação": "Letras",
+				"estado": "SP",
+				"país": "Brasil"
+			}
+
+			POST /catalogo_v3/pessoas/2
+			{
+				"nome": "Maria Silva",
+				"interesses": ["pintura", "literatura", "teatro"],
+				"cidade": "Diamantina",
+				"formação": "Artes Plásticas",
+				"estado": "MG",
+				"país": "Brasil"
+			}
+
+			POST /catalogo_v3/pessoas/3
+			{
+				"nome": "Richard Edward",
+				"interesses": ["matemática", "física", "música"],
+				"cidade": "Boston",
+				"formação": "Física",
+				"estado": "MA",
+				"país": "Estados Unidos"
+			}
+
+			POST /catalogo_v3/pessoas/4
+			{
+				"nome": "Patrick von Steppat",
+				"interesses": ["computação", "culinária", "cinema"],
+				"cidade": "Rio de Janeiro",
+				"formação": "Gastronomia",
+				"estado": "RJ",
+				"país": "Brasil"
+			}
+
+			POST /catalogo_v3/pessoas/5
+			{
+			  "nome": "Paulo Eduardo de Azevedo Silveira",
+			  "interesses": ["computação", "literatura"],
+			  "cidade": "São Paulo",
+			  "formação": "Computação",
+			  "estado": "SP",
+			  "país": "Brasil"
+			}
+
+			POST /catalogo_v3/pessoas/6
+			{
+			  "nome": "Michael Jordan",
+			  "interesses": ["basquete"],
+			  "cidade": "Chicago",
+			  "formação": "Artes",
+			  "estado": "IL",
+			  "país": "Estados Unidos"
+			}
+
+			POST /catalogo_v3/pessoas/7
+			{
+			  "nome": "Marcelo Negrão",
+			  "interesses": ["volei"],
+			  "cidade": "São Paulo",
+			  "formação": "Adminstração",
+			  "estado": "SP",
+			  "país": "Brasil"
+			}
+			
+		E buscar por todas as pessoas que tenham interesse em esportes:
+			
+			GET /catalogo_v3/pessoas/_search?q=interesses:esportes
+			
+		Como resultado temos:
+			{
+			  "took": 15,
+			  "timed_out": false,
+			  "_shards": {
+				"total": 3,
+				"successful": 3,
+				"failed": 0
+			  },
+			  "hits": {
+				"total": 3,
+				"max_score": 0.69681984,
+				"hits": [
+				  {
+					"_index": "catalogo_v3",
+					"_type": "pessoas",
+					"_id": "6",
+					"_score": 0.69681984,
+					"_source": {
+					  "nome": "Michael Jordan",
+					  "interesses": [
+						"basquete"
+					  ],
+					  "cidade": "Chicago",
+					  "formação": "Artes",
+					  "estado": "IL",
+					  "país": "Estados Unidos"
+					}
+				  },
+				  {
+					"_index": "catalogo_v3",
+					"_type": "pessoas",
+					"_id": "7",
+					"_score": 0.69681984,
+					"_source": {
+					  "nome": "Marcelo Negrão",
+					  "interesses": [
+						"volei"
+					  ],
+					  "cidade": "São Paulo",
+					  "formação": "Adminstração",
+					  "estado": "SP",
+					  "país": "Brasil"
+					}
+				  },
+				  {
+					"_index": "catalogo_v3",
+					"_type": "pessoas",
+					"_id": "1",
+					"_score": 0.14160846,
+					"_source": {
+					  "nome": "João Silva",
+					  "interesses": [
+						"futebol",
+						"música",
+						"literatura"
+					  ],
+					  "cidade": "São Paulo",
+					  "formação": "Letras",
+					  "estado": "SP",
+					  "país": "Brasil"
+					}
+				  }
+				]
+			  }
+			}
+			
+	O que aprendemos?
+		Aplicação de analyzers durante indexação e busca.
+		Os detalhes do analyzer portuguese.
+		Como combinar um analyzer customizado para sinônimos a um analyzer existente.
+		
+----------------------------------------------------------------------------------------------------------------------------------------		
+CAP 8
+	Como parte da definição de um atributo no mapeamento de um índice, basta adicionar os campos extras a serem gerados para um atributo e sua configuração. Veja o exemplo a seguir para o atribute nome:
+		"nome": {
+			"type": "string",
+			"fields": {
+				"original": { 
+					"type": "string", 
+					"index": "not_analyzed" 
+				}
+			},
+			"index": "analyzed",
+			"analyzer": "portuguese"
+		}
+		
+	O ElasticSearch irá criar um campo chamado nome.original e manterá uma cópia do valor para o atributo nome, sem analisá-lo. Vale notar que original poderia ser qualquer nome válido de campo. É comum o uso nomes como raw ou plain.
+	
+	Criando nosso índice
+		hamaremos nosso índice de pessoas e nosso tipo de registros e faremos uso de tudo o que aprendemos até o momento, inclusive multi-campos. Segue a configuração do nosso índice:
+			PUT /pessoas
+			{
+			  "settings": {
+				"index": {
+				  "number_of_shards": 3,
+				  "number_of_replicas": 0
+				},
+				"analysis": {
+				  "filter": {
+					 "portuguese_stop": {
+					  "type":       "stop",
+					  "stopwords":  "_portuguese_" 
+					},
+					"portuguese_stemmer": {
+					  "type": "stemmer",
+					  "language": "light_portuguese"
+					},
+					"filtro_de_sinonimos": {
+					  "type": "synonym",
+					  "synonyms": [
+						"futebol => futebol,society",
+						"society => society,futebol",
+						"volei,voleibol,volleyball",
+						"esport => esport,futebol,society,volei,basquet",
+						"exat => exat,matematic,fisic,computaca",
+						"arte => arte,pintur,teatr,music,cinem"
+					  ]
+					}
+				  },
+				  "analyzer": {
+					"sinonimos": {
+					  "tokenizer": "standard",
+					  "filter": [
+						"lowercase",
+						"portuguese_stop",
+						"portuguese_stemmer",
+						"filtro_de_sinonimos"
+					  ]
+					}
+				  }
+				}
+			  },
+			  "mappings": {
+				"registros": {
+				  "_all": {
+					"type": "string",
+					"index": "analyzed",
+					"analyzer": "portuguese"
+				  },
+				  "properties": {
+					"cidade": {
+					  "type": "string",
+					  "fields": {
+						"original": { 
+						  "type": "string", 
+						  "index": "not_analyzed" 
+						}
+					  },
+					  "index": "analyzed",
+					  "analyzer": "portuguese"
+					},
+					"estado": {
+					  "type": "string",
+					  "index": "not_analyzed" 
+					},
+					"formação": {
+					  "type": "string",
+					  "fields": {
+						"original": { 
+						  "type": "string", 
+						  "index": "not_analyzed" 
+						}
+					  },
+					  "index": "analyzed",
+					  "analyzer": "portuguese"
+					},
+					"interesses": {
+					  "type": "string",
+					  "index": "analyzed",
+					  "analyzer": "portuguese",
+					  "search_analyzer": "sinonimos"
+					},
+					"nome": {
+					  "type": "string",
+					  "fields": {
+						"original": { 
+						  "type": "string", 
+						  "index": "not_analyzed" 
+						}
+					  },
+					  "index": "analyzed",
+					  "analyzer": "portuguese"
+					},
+					"país": {
+					  "type": "string",
+					  "fields": {
+						"original": { 
+						  "type": "string", 
+						  "index": "not_analyzed" 
+						}
+					  },
+					  "index": "analyzed",
+					  "analyzer": "portuguese"
+					}
+				  }
+				}
+			  }
+			}
+			
+	Usando a API _bulk
+		ElasticSearch possui a API _bulk para permite carregamento de dados em massa.
+		
+		Por questão de simplicidade, vamos focar no que precisamos para atingir nossos objetivos. A _bulk API é suportada no método POST e a usaremos da seguinte maneira:
+			POST /indice/tipo/_bulk (1)
+			{"create": {}} (2)
+			{"campo1": "valor1", "campo_n": "valor_n"} (3)
+			{"create": {}} (4)
+			{"campo1": "valor2", "campo_n": "valor_n2"} (5)
+		Onde:
+			(1) Índice e tipo onde API _bulk será executada
+			(2) Ação e metadado. Neste caso, estamos interessados apenas na criação de documentos, logo usamos create. Junto à operação, são informados valores como índice, tipo e identificador do registro que vem a seguir. Como informamos índice e tipo, e utilizaremos a geração automática de identificadores, podemos ocultar os demais valores.
+			(3) O documento a ser inserido.
+			(4) A ação e metadado para o próximo documento da requisição.
+			(5) O próximo documento da requisição. Note que (2) e (3) são repetidos para cada documento parte da requisição.
+			
+		Usos mais avançados para a _bulk API
+			Para mais detalhes sobre a _bulk API, acesse o link: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
+		
+	Exercicios:
+		No índice pessoas e no tipo registros, podemos fazer um GET para uma determinada URI, que nos retorna a quantidade de registros no índice. Que URI é essa?
+			R: /pessoas/registros/_count
+		
+	O que aprendemos?
+		Multi-campos e como eles nos ajudam a preservar os valores originais de atributos que são indexados.
+		_bulk API para fazer ingestão de registros em grandes volumes.
+		
+----------------------------------------------------------------------------------------------------------------------------------------		
+CAP 9
+	Kibana
+		té sua versão 4.1, Kibana era disponibilizado como um plugin para o ElasticSearch, assim como o Kopf. Contudo, dado o crescimento do plugin, ele foi "promovido" a uma aplicação separada
+		
+		Kibana é uma aplicação conhecida como single page, que utiliza AngularJS como um de seus frameworks. Além disso, como passou a ser uma aplicação separada e não mais um plugin, o NodeJS é utilizado para servir os arquivos JavaScript e HTML para o browser e agir como ponte para o ElasticSearch.
+		
+	Instalando o Kibana
+		A instalação é muito simples, basta descompactar o arquivo e executar o Kibana como mostrado na figura seguir, após o ElasticSearch ter sido iniciado:
+		imagem: captura6.png
+		
+		Obs: o kibana tem que ser executado apos a inicialização do elasticSearch
+		
+		Importante: Caso venha a utilizar um ElasticSearch que não esteja instalado localmente ou tenha alterado a porta padrão 9200, é necessário atualizar o endereço do ElasticSearch no arquivo config/kibana.yml. Por padrão, Kibana se conecta no endereço http://localhost:9200.
+		
+	O index Kibana no Elasticsearch
+		Ao conectar o kibana(ele faz isso automaticamente ao ser inicializado) ele ira criar um indice novo no elastic, que sera usado para armazenar os dados dos objetos que criamos na aplicação como consultas, visualizações e dashboards, podemos observar esse indice criado na imagem a seguir:
+			imagem: captura7.png
+		
+	Registrando nosso índice no Kibana
+		Kibana pode ser acessado no endereço http://localhost:5601. Na primeira vez que abrimos o Kibana, somos apresentados à seguinte tela:
+		
+		Existem duas coisas importantes a sabermos neste momento:
+			O índice que queremos mapear possui algum campo de data que queremos utilizar como padrão para filtros? No nosso caso a resposta é não, logo podemos desmarcar o checkbox.
+			
+			Qual o nome ou padrão de nome dos índices que queremos mapear? No nosso caso, temos apenas um índice, cujo nome é pessoas. Logo, vamos mapeá-lo, como mostrado a seguir:
+				imagem: captura8.png
+				
+		Basta clicar no botão Create e teremos a confirmação do mapeamento do índice, como mostrado a seguir. Note que podemos ver nosso metadado, os atributos e suas condições em relação a serem analisados ou indexados.
+			Imagem: captura9.png
+			
+	Kibana Discover tab
+		Discover é a sub-aplicação padrão dentro do Kibana. Nesta sub-aplicação, podemos simular buscas em formato livre (free-form) ou mesmo buscas, utilizando a sintaxe do Apache Lucene.
+
+		Esta aplicação nos permite ter o gostinho de busca a lá Google, com highlighting dos termos procurados no resultado e sem precisarmos criar um website para tal.
+	
+
+	Além de permitir que novos índices sejam adicionados ao Kibana, a Settings Tab também nos permite alterar diversas configurações, como por exemplo o mapeamento de campos, meta informação de visualizações e dashboards criadas, e configurações avançadas que impactam o Kibana como um todo.
+		R:Para saber mais, acesse o link: https://www.elastic.co/guide/en/kibana/current/settings.html
+	
+	É muito comum possuir documentos que representam eventos que aconteceram em algum momento no passado. Por exemplo, imagine um índice que armazena documentos com informações de vendas de produtos. Quando mapeamos um índice que possua um campo que indica quando, podemos indicar qual o nome do atributo durante o mapeamento e ganhar acesso a algumas funcionalidades.
+		R: Exemplos de funcionalidades são histograma por data, filtro global com opções como Último Mês, Última semana, entre outras.
+			Para saber mais, acesse o link: https://www.elastic.co/guide/en/kibana/current/settings.html#settings-create-pattern
+	
+	Como você deve ter notado, quando utilizamos a Discover Tab e fizemos a busca por matemática ou esportes, tivemos os termos encontrados mostrados em destaque. Esta é uma funcionalidade provida pelo ElasticSearch e não pelo Kibana, e pode ser utilizada em qualquer website.
+		R: Para saber mais, acesse o link: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html
+		
+	O que aprendemos?
+		O que é e como instalar a aplicação Kibana.
+		Como configurar um índice na aplicação Kibana.
+		Como a Discover Tab pode nos ajudar na busca de dados.
+		
+----------------------------------------------------------------------------------------------------------------------------------------		
+CAP 10
+	
+	Map-Reduce com Elasticsearch
+		Caso você já tenha ouvido sobre Map-Reduce, pense em um modo de espalhar os documentos que temos em grupos separados (as agregações) e depois reduzi-los a um valor que pode ser a quantidade de documentos deste grupo. A ideia é igual ao uso de group by em bancos de dados relacionais.
+	
+	Usando buckets
+		Aggregation Terms: tipo de agregação que usamos para texto.
+		
+		Field: nome do atributo a ser usado na agregação. Note que devemos usar os atributos que não foram analisados, caso contrário teremos os tokens 
+		gerados no resultado e não o valor que indexamos. Ainda bem que usamos multi-fields!
+		
+		Order By: como o bucket deve ser ordenado. Neste caso, será ordenado pela quantidade de elementos que possui.
+		
+		Order: se queremos os buckets com mais elementos no topo (Descending) ou com menos elementos (Ascending).
+		
+		Size: quantos buckets queremos.
+	Criando Bar Chart
+		vamos criar o gráfico de barras. O processo é o mesmo, porém devemos selecionar Vertical bar chart. Neste tipo de visualização, temos diferentes maneiras para criar os buckets de dados:
+
+		X-Axis: O rótulo de cada bucket criado é utilizado para criar uma barra nova, que será mostrada no eixo X.
+		
+		Split Bars: Cada barra já existente no gráfico é particionada pelos rótulos de bucket criados.
+		
+		Split Charts: O rótulo de cada bucket criado é utilizado para criar um novo gráfico.
+		No nosso caso, queremos visualizar as 5 formações mais comuns para cada um dos 26 estados do Brasil. Logo, vamos primeiro criar uma barra para cada estado:
+		
+		https://s3.amazonaws.com/caelum-online-public/elasticsearch/cap5_image_21.png
+		
+		Agora vamos criar outro bucket com as 5 formações mais comuns:
+		
+		https://s3.amazonaws.com/caelum-online-public/elasticsearch/cap5_image_22.png
+		
+		O resultado esperado é:
+		
+		https://s3.amazonaws.com/caelum-online-public/elasticsearch/img/image-v-bar-chart.png
+		
+	Usando Pie Chart
+		Vamos criar agora o gráfico de pizza. O processo é o mesmo, porém devemos selecionar Pie Chart. A diferença é que precisamos decidir como 'cortar' o gráfico. Note que 'cortar', neste contexto, significa criar o bucket. Neste caso, queremos apenas um gráfico com o top 5, logo devemos utilizar Split slices e selecionar o atributo formações.original. Nosso size será 5 e devemos utilizar a ordem Descending, pois queremos os mais populares ou com maior count, assim como mostrado na figura a seguir:
+		
+		https://s3.amazonaws.com/caelum-online-public/elasticsearch/cap5_image_19.png
+		
+		Importante: Não devemos esquecer de clicar no botão play para ver o resultado da agregação no gráfico.
+
+		E temos o gráfico:
+		
+		https://s3.amazonaws.com/caelum-online-public/elasticsearch/cap5_image_20.png
+		
+		Salve o gráfico com o nome Formações Mais Populares.
+	
+
+	Montando o Dashboard
+		Nosso último passo é criar um dashboard para mostrar as visualizações recém criadas. Para tal, basta clicarmos em Dashboard. Note que a mensagem mostrada é bem clara sobre o que devemos fazer para adicionar visualizações:
+		
+		https://s3.amazonaws.com/caelum-online-public/elasticsearch/cap5_image_24.png
+		
+		Basta clicarmos no sinal mostrado na figura abaixo para ver as visualizações que criamos. Note que podemos também adicionar buscas que foram salvas previamente na tab Discovery:
+		
+		https://s3.amazonaws.com/caelum-online-public/elasticsearch/cap5_image_25.png
+		
+		Basta agora selecionar as visualizações, uma a uma, que elas serão mostradas no Dashboard. Note que podemos arrastar e dimensionar as visualizações:
+		
+		https://s3.amazonaws.com/caelum-online-public/elasticsearch/cap5_image_26.png
+		
+		Por fim, basta salvarmos o dashboard e pronto. Temos uma rápida e interativa maneira de visualizar e interagir com nossos dados. Repare que, ao clicarmos em alguns dos elementos na tela, como por exemplo uma fatia do gráfico de pizza, um filtro com o valor selecionado é aplicado em todas as visualizações. Podemos também usar a barra de filtro para escolher, interativamente o que queremos ver. Veja o exemplo a seguir, onde estamos interessados em filtrar as pessoas que possuem interesse em esportes:
+		
+		https://s3.amazonaws.com/caelum-online-public/elasticsearch/cap5_image_27.png
+		
+	Criandos os dashs
+		Para encontrar as 5 formações que possuem mais interessados em esportes por estado, podemos ir na aba Visualize do Kibana, selecionar Data table, e em seguida From a new search, digitando o índice pessoas, caso seja necessário.
+
+		Na barra de busca, filtramos pelo interesse em esportes (interesses:esportes).
+			Imagem:captura10.png
+		
+		Após isso, precisamos quebrar essa contagem, esse número em buckets, criando um para cada uma das 5 formações com mais interessados em esportes, clicando em Split-Rows. Preencha os campos conforme a seguir:
+			Aggregation: Terms.
+			Field: formação.original.
+			Order By: metric: Count.
+			Order: Descending.
+			Size: 5.
+			
+			Imagem:captura11.png
+			
+		Por último, é preciso quebrar cada bucket de formação por estado. Para tal, criaremos um sub-bucket por estado, limitando ao top 5 estados, clicando em Add sub-buckets e preenchendo:
+			Imagem:captura12.png
+			
+		E todas as visualizações criadas podem ser salvas. Para montá-las em um dashboard, basta clicar na aba Dashboard do Kibana, e clicar no ícone +.
+		Lá serão exibidas todas as visualizações salvas, e você pode selecionar as que quiser, criando seu próprio dashboard. Além disso você pode ajustar a distribuição das visualizações na tela, conforme o seu gosto. Mas lembre-se de salvar o seu dashboard.
+		Por exemplo:
+			imagem: captura13.png
+			
+		Agregações são suportadas diretamente no ElasticSeach. Kibana apenas nos ajuda a construir as requisições. Existem diversos tipos de agregações no ElasticSearch. Para saber mais detalhes sobre este assunto, visite o link a seguir:
+			https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations.html
+
+			
+	O que aprendemos
+		Usar agregações através de buckets.
+		Usar métricas e visualizações com Kibana.
+		Montar um dashboard com Kibana.
+				
