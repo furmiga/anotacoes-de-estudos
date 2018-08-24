@@ -1,0 +1,451 @@
+ JBoss Forge, um framework criado pela JBoss para a criação da estrutura inicial do projeto.
+	-O JBoss Forge é um gerador de projetos Java, e ele gera toda a estrutura base do projeto integrada ao Maven. Além disso, configura dependências (bibliotecas e frameworks), estrutura de pastas e gera configurações iniciais que normalmente envolve arquivos XML.
+	Sem ele, em um projeto tipicamente Java EE, devemos criar vários arquivos XML manualmente, por exemplo: persistence.xml, web.xml, faces-config.xml, pom.xml, beans.xml entre outros.
+	
+	-Apos baixar o jboos forge va ate a pasta bin e execute o script forge
+	
+	-Neste momento, já dentro do terminal do JBoss, podemos digitar e executar o seguinte comando para criar o projeto: project-new --named casadocodigo. Este comando indica para o JBoss que queremos um novo projeto (project-new) e que este projeto terá o nome casadocodigo (--named casadocodigo).
+		Obs: Observação: Nas versões mais recentes do JBoss o comando para criar um novo projeto mudou para new-project, ou seja, utilize o comando new-project --named casadocodigo para criar o projeto caso encontre o erro: ***ERROR*** No such command: project-new .
+		
+		
+	Obs: tudo que esta dentro do WEB-INF automaticamente ja é protegido pelo servidor de aplicação
+
+Aula 1	
+
+	CRIANDO NOSSO PRIMEIRO CONTROLLER
+		
+		//@Controller tem como função falar para o spring obviamente que esta classe é um controller do nosso MVC
+		@Controller
+		public class HomeController{
+			
+			//@RequestMapping, tem a função de definir que aquele metodo atende a um determinado path ou endereço. Neste caso estamos definindo que o metodo index atenderá as requisições que chegarem na raiz do nosso projeto ("/")
+			@RequestMapping("/")
+			public String index(){
+				System.out.println("Entrando na home da CDC");
+				//Aqui estou informando a view que eu quero retornar, no caso home.jsp
+				//No nosso exemplo a home esta dentro do WEB-INF/views, mas eu não precisei passar todo o path e nem o sufixo jsp, pq eu ja configurei isso na nossa classe de configuração AppWebConfiguration
+				return "home"
+			}
+		
+		}
+
+		Em nenhum momento até agora, configuramos o SpringMVC para atender as requisições que chegam para nossa aplicação
+		- Agora precisamos configurar uma servlet do spring para atender as requisições, podemos fazer isso por XML ou código java (vamos fazer aqui por codigo java)
+			
+		public class ServletSpringMVC extends AbstractAnnotationConfigDispatcherServletInitializer{
+			@Override
+			protected Class<?>[] getRootConfigClasses() {
+				return null;
+			}
+
+			@Override
+			protected Class<?>[] getServletConfigClasses() {
+				 //essa classe sera criada logo abaixo
+				 //a classe AppWebConfiguration será usada como classe de configuração do servlet do SpringMVC
+				 return new Class[] {AppWebConfiguration.class};
+			}
+
+			
+			//pede um array com os mapeamentos que queremos que nosso servlet atenda
+			@Override
+			protected String[] getServletMappings() {
+				//Como estas configurações estamos definindo que o servlet do SpringMVC atenderá as requisições a partir da raiz do nosso projeto (/)
+				return new String[] {"/"};
+			}
+		}
+		
+		//@EnableWebMvc utilizado para usar o recurso de Web MVC do SpringMVC
+		@EnableWebMvc
+		//Aqui estou mostrando para o spring qual o pacote (pacote da classe que eu passei) o SpringMVC irá encontrar os nossos controllers!
+		//Aqui eu passei a classe mas eu poderia usar o basePackages={""} e passar o pacote direto, neste exemplo preferimos usar a classe e o spring decobre o pacote de forma automatica
+		ComponentScan(basePackageClasses={HomeController.class})
+		public class AppWebConfiguration {
+			
+			//A anotação @Bean é para que o retorno da chamada deste metódo possa ser gerenciada pelo SpringMVC, sem ela nossa configuração não funciona
+			@Bean
+			public InternalResourceViewResolver internalResourceViewResolver(){
+				InternalResourceViewResolver resolver = new InternalResourceViewResolver();
+				resolver.setPrefix("/WEB-INF/views/");
+				resolver.setSuffix(".jsp");
+				return resolver;
+			}
+		}
+	
+Aula 2
+
+	BIND DO SPRING
+	
+		Criamos uma pagina qualquer com um form 
+		
+		<form action="/produtos" method="post">
+			<div>
+				<label>Título</label>
+				<input type="text" name="titulo" />
+			</div>
+			<div>
+				<label>Descrição</label>
+				<textarea rows="10" cols="20" name="descricao"></textarea>
+			</div>
+			<div>
+				<label>Páginas</label>
+				<input type="text" name="paginas" />
+			</div>
+			<button type="submit">Cadastrar</button>
+		</form>
+		
+		Criamos um produto controller 
+		
+		@Controller
+		public class ProdutosController {
+
+			@RequestMapping("/produtos/form")
+			public String form(){
+				...
+			}
+			
+			//perceba que os nomes dos parametros do metodo são os mesmos passados no name dos inputs do html, o spring ja faz esse bind, pegando o name e vendo qual atributo tem o mesmo nome (o bixão é foda mesmo)
+			//Eu poderia tambem ao inves de passar os parametro passar direto uma classe, por exemplo Produto com os atributos(com getter e setter), o spring irira visualizar essa classe e ver os parametros de mesmo nome e populalos
+			//Ex: public String gravar(Produto produto)
+			@RequestMapping("/produtos")
+			public String gravar(String titulo, String descricao, int paginas){
+				System.out.println(titulo);
+				System.out.println(descricao);
+				System.out.println(paginas);
+
+				return "ok";
+			}
+
+		}
+		
+	Preparando o Spring com JPA
+		
+	
+		Vamos criar uma classe de DAO
+		
+		//Para que essa classe possa ser injetada pelo spring na classe ProdutosController(logo abaixo), temos que fazer com que essa classe seja gerenciada pelo Spring
+		//Para isso devemos marcar o ProdutoDAO com a anotação @Repository, eu poderia usar tambem o @Component tambem, porem por questão de semantica mesmo vamos usar o @Repository
+		//Observação: @Repository extende de @Component
+		@Repository
+		public class ProdutoDAO {
+
+			//EntityManager é fornecido pelo Spring com esta anotação
+			@PersistenceContext
+			private EntityManager manager;
+
+			public void gravar(Produto produto){
+				manager.persist(produto);
+			}
+		}
+		
+		Mesmo anotando com @Repository o spring não ira conseguir localizar esta classe para injeta-la, precisamos configura-la na nossa classe AppWebConfiguration na qual configuramos para o Spring encontrar nossos controllers.
+		Nós vamos configurar para que encontre nossos daos também. A anotação @ComponentScan deve ficar assim:
+		ComponentScan(basePackageClasses={HomeController.class, ProdutoDAO.class})
+		
+		
+		Agora na classe de controller vamos injetar esse ProdutoDAO
+		
+		@Controller
+		public class ProdutosController {
+
+			//A anotação @Autowired serve para que nós não nos preocupemos em criar manualmente o ProdutoDAO no Controller
+			@Autowired
+			private ProdutoDAO produtoDao;
+
+			@RequestMapping("/produtos")
+			public String gravar(Produto produto){
+				System.out.println(produto);
+				produtoDao.gravar(produto);
+				return "/produtos/ok";
+			}
+			[...]
+		}
+		
+		Precisamos agora tambem criar nossas configurações do JPA para que o spring possa gerenciar o nosso EntityManager passado no nosso ProdutoDAO, sem isso o spring não consegue injetar o EntityManager
+			
+		Nesta classe estamos criando um único método, que será usado pelo Spring para gerar o EntityManager
+		public class JPAConfiguration {
+
+			@Bean
+			public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
+				LocalContainerEntityManagerFactoryBean factoryBean = new LocalContainerEntityManagerFactoryBean();
+				JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
+
+				//Estou passando que o adaptador de JPA que eu vou utilizar é o hibernate, poderia ser outro, por exemplo eclipseLink
+				factoryBean.setJpaVendorAdapter(vendorAdapter);
+
+				DriverManagerDataSource dataSource = new DriverManagerDataSource();
+				dataSource.setUsername("root");
+				dataSource.setPassword("");
+				dataSource.setUrl("jdbc:mysql://localhost:3306/casadocodigo");
+				dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+
+				factoryBean.setDataSource(dataSource);
+
+				Properties props = new Properties();
+				props.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQL5Dialect");
+				props.setProperty("hibernate.show_sql", "true");
+				props.setProperty("hibernate.hbm2ddl.auto", "update");
+
+				factoryBean.setJpaProperties(props);
+
+				//Aqui eu informo onde estão minhas entidades
+				factoryBean.setPackagesToScan("br.com.casadocodigo.loja.models");
+
+				return factoryBean;
+			}
+		}			
+		
+		
+		Exercicio
+			Dentro do ProdutosControllers, para utilizarmos o produtoDAO do tipo ProdutoDAO simplesmente anotamos o objeto com a annotation @Autowired do Spring. Por que ao invés de instanciarmos manualmente, fizemos essa abordagem?
+				R:Utilizamos o @AutoWired para indicar ao Spring que o objeto anotado é um Bean dele e que queremos que ele nos dê uma instância por meio do recurso de injeção de dependência.
+		
+		
+		Uma coisa importante precisamos passar o JpaConfiguration para o Spring, caso contrario ele não ira conseguir resolver nosso EntityManager
+		
+		na classe ServletSpringMVC
+		@Override
+		protected Class<?>[] getServletConfigClasses() {
+			return new Class[] {AppWebConfiguration.class, JPAConfiguration.class};
+		}
+		
+	Configurando o TransactionManagement
+	
+		Se tentarmos rodar a aplicação um erro ira ocorrer Request processing failed; nested exception is javax.persistence.TransactionRequiredException: No transactional EntityManager available
+		
+		Note que o erro é bem claro: No transactional EntityManager available do tipo TransactionRequiredException. Ou seja, nossa operação com o banco de dados deve ser gerenciada com uma transação.
+		
+		Primeiro precisaremos de um TransactionManager que conheça nosso EntityManager para que assim ele possa gerenciar as transações de nossas entidades.
+		
+		Na classe JPAConfiguration adicionaremos mais um método que criará o TransactionManager.
+		
+		//@EnableTransactionManagement faz com que o Spring ative o gerenciamento de transações e já reconhece o TransactionManager
+		@EnableTransactionManagement
+		public class JPAConfiguration {
+
+			[...]
+
+			@Bean
+			public JpaTransactionManager transactionManager(EntityManagerFactory emf){
+				return new JpaTransactionManager(emf);
+			}
+		}
+		
+		Agora precisamos definir que o nosso ProdutoDAO é uma classe Transancional e fazemos isso através da anotação @Transactional do pacote org.springframework.transaction.annotation.Transactional.
+		@Repository
+		@Transactional
+		public class ProdutoDAO {
+			[...]
+		}
+		
+Aula 3
+
+	ModelAndView
+		
+		Quando queremos retornar para o front objetos para popular a tela, utilizamos o ModelAndView
+			
+			@RequestMapping("/produtos/form")
+			public ModelAndView form(){
+
+				ModelAndView modelAndView = new ModelAndView("produtos/form");
+				modelAndView.addObject("tipos", TipoPreco.values());
+
+				return modelAndView;
+			}
+			
+		No front end vamos usar foreach da taglib 
+			observação:  Para que as tags da JSTL funcionarem, lembre-se de fazer o importe da taglib logo após a diretiva de página JSP no início do arquivo.
+				<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+
+				<!-- Import da taglib -->
+				<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+				
+			
+			Nosso laço(forEach), manipula o html do formulário para criar os campos de tipos de preços, e o resultado deste laço é algo como:
+				
+				<c:forEach items="${tipos}" var="tipoPreco" varStatus="status">
+					<div>
+						<label>${tipoPreco}</label>
+						<input type="text" name="precos[${status.index}].valor">
+						<input type="hidden" name="precos[${status.index}].tipo" value="${tipoPreco}">
+					</div>
+				</c:forEach>
+
+		Exercicio:
+			Em diversos métodos mapeados dos nossos controllers, costumamos retornar uma String para devolvermos uma página assim que aquele método for chamado. Entretanto, em alguns métodos, ao invés de utilizarmos o retorno de String, retornamos a classe ModelAndView. Porque utilizamos a classe ModelAndView ao invés da String?
+				R: Quando utilizamos o ModelAndView, além retornar uma página, temos a possibilidade de enviar objetos de qualquer classe para essas páginas. Em outras palavras, dessa forma somos capazes de exibir, por exemplo, as informações das nossas classes modelos.
+	
+	Mais anotacoes JPA @Embeddable/@ElementCollection
+		
+		vamos criar a classe precoa
+			public class Preco {
+
+				private BigDecimal valor;
+				private TipoPreco tipo;
+
+				public BigDecimal getValor() {
+					return valor;
+				}
+
+				public void setValor(BigDecimal valor) {
+					this.valor = valor;
+				}
+
+				public TipoPreco getTipo() {
+					return tipo;
+				}
+
+				public void setTipo(TipoPreco tipo) {
+					this.tipo = tipo;
+				}
+
+			}
+		
+		Agora, adicione esses preços na classe Produto. Como cada livro pode ter mais de um preço, utilize uma lista. Gere também o getter e setter desse atributo:
+			
+			@Entity
+			public class Produto {
+
+				private List<Preco> precos;
+
+				public List<Preco> getPrecos() {
+					return precos;
+				}
+
+				public void setPrecos(List<Preco> precos) {
+					this.precos = precos;
+				}
+
+					// restante do código omitido
+
+			}	
+		
+		Anote a classe Preco com @Embeddable, que a permite ser persistida, desde que ela seja um atributo de uma entidade, e no caso ela é um atributo da classe Produto, que é uma entidade:
+		
+			@Embeddable
+			public class Preco {
+
+				// restante do código omitido
+
+			}
+			
+		Para indicar que você irá armazenar uma lista de Preco, de uma classe @Embeddable, utilize a anotação @ElementCollection. Portanto, anote o atributo precos da classe Produto:
+		
+			@ElementCollection
+			private List<Preco> precos;
+			
+Aula 4
+
+	Informar se um metodo vai atender apens get ou post
+	
+		perceba que eu infomeri agora o value, pois como vou passar mais de um parametro para a anotação @RequestMapping, eu preciso passar esse value e depois o method
+				
+		@RequestMapping(value="/produtos", method=RequestMethod.POST)
+		public String gravar(Produto produto){
+			[...]
+		}
+
+
+		@RequestMapping(value="/produtos", method=RequestMethod.GET)
+		public ModelAndView listar(){
+			[...]
+		}
+		
+	Enconding
+	
+		Para definirmos qual enconding o spring vai trabalhar, nós iremos usar filtros do proprio spring, para isso vamos para a classe ServeltSpringMVC e vamos criar mais um método de configuração do Spring
+		
+		Existe um método chamado getServletFilters usado pelo Spring que espera receber um array de filtros. Então vamos criar um CharacterEncodingFilter, definir o encoding deste filtro usando o valor "UTF-8", adicionar este filtro ao array de filtros e o retornar esse array para o Spring. Use os imports import javax.servlet.Filter e org.springframework.web.filter.CharacterEncodingFilter.
+	
+		public class ServletSpringMVC extends AbstractAnnotationConfigDispatcherServletInitializer{
+
+			//outros métodos omitidos
+
+			@Override
+			protected Filter[] getServletFilters() {
+				CharacterEncodingFilter encodingFilter = new CharacterEncodingFilter();
+				encodingFilter.setEncoding("UTF-8");
+				return new Filter[] {encodingFilter};
+			}
+		}	
+		
+	Melhorando as nossas rotas
+	
+		Vamos fazer agora um pequeno ajuste em nosso ProdutosController para deixar o mapeamento das rotas mais simples. Note que em todos os métodos usamos a anotação @RequestMapping passando sempre /produtos.
+		Para que não precisemos ficar passando /produtos em todos os métodos do controller, vamos pôr essa anotação em nossa classe. Assim podemos remover o /produtos de todos os métodos e o Spring se encarrega de carregar os mapeamentos baseados no mapeamento da classe. Sendo assim nossa classe ProdutosController deve ficar parecida com o código abaixo:
+		
+		@Controller
+		@RequestMapping("produtos")
+		public class ProdutosController {
+			[...]
+
+			//ANTES - @RequestMapping("produtos/form")
+			@RequestMapping("/form")
+			public ModelAndView form(){
+				[...]
+			}
+
+			//ANTES - @RequestMapping(value="/produtos",method=RequestMethod.POST)
+			@RequestMapping(method=RequestMethod.POST)
+			public String gravar(Produto produto){
+				[...]
+			}
+
+			//ANTES - @RequestMapping(value="/produtos",method=RequestMethod.GET)
+			@RequestMapping(method=RequestMethod.GET)
+			public ModelAndView listar(){
+				[...]
+			}
+
+		}
+		
+Aula 5
+
+	Redirect
+		Para realizar um redirect no spring temos que usar o ModelAndView usando como rota o redirect:xxx
+		
+		@RequestMapping(method=RequestMethod.POST)
+		public ModelAndView gravar(Produto produto){
+			System.out.println(produto);
+			produtoDao.gravar(produto);
+			return new ModelAndView("redirect:produtos");
+		}
+		
+		agora vamos mostrar uma msg de sucesso apos a gravação
+		
+		@RequestMapping(method=RequestMethod.POST)
+		public ModelAndView gravar(Produto produto, RedirectAttributes redirectAttributes){
+			System.out.println(produto);
+			produtoDao.gravar(produto);
+			ModelAndView modelAndView = new ModelAndView("redirect:produtos")
+			modelAndView.addObject("sucesso","Produto cadastrado com sucesso!");
+			return new ModelAndView("redirect:produtos");
+		}
+		
+		caso eu faça da forma acima, eu irei passar esse atributo pela url, ficando com uma url suja e não conseguindo acessar o atributo atraves de uma express language, para resolver esse problema bas usarmos o flashScope, que sera explicado no item abaixo
+		
+		
+		
+		Exercicios:
+			Por que devemos sempre fazer um redirect após o formulário enviar um POST para nossos sistemas?
+				R: Pois ao fazer F5 o navegador repete o ultimo request que ele realizou, e quando esse resquest é um POST, todos os dados que foram enviados também são repetidos. Se você realizou um insert no banco de dados, esse insert será repetido. Ou mesmo se realizou alguma operações que envia e-mail, por exemplo, o e-mail será enviado duas vezes ao pressionar F5.
+				   Para evitar qualquer problema de dados reenviados, realizamos um redirect após um formulário com POST.
+	
+	FlashScoped
+	
+		Para que possamos manter um atributo de uma requisição para outra, por exemplo apos de um redirect eu preciso utilizar o FlashScoped
+		O metodo mostrado logo acima ficaria desta maneira
+		
+		@RequestMapping(method=RequestMethod.POST)
+		public ModelAndView gravar(Produto produto, RedirectAttributes redirectAttributes){
+			System.out.println(produto);
+			produtoDao.gravar(produto);
+			redirectAttributes.addFlashAttribute("sucesso","Produto cadastrado com sucesso!");
+			return new ModelAndView("redirect:produtos");
+		}		
+		
+		Exercicios:
+			O que é o Flash Scoped que usamos através do objeto RedirectAttributes do Spring?
+				R:O Flash Scoped é um escopo onde os objetos que adicionamos nele através do método addFlashAttribute ficam vivos de um request para outro, enquanto o navegador executa um redirect (usando o código de status 302).
+	
+	

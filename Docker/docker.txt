@@ -1,0 +1,4 @@
+Hypervisor -> permite virtualizar seus recurasos fisicos
+
+o que é o docker:
+	

@@ -1,0 +1,37 @@
+
+
+Explicar o que é integração continua e seus beneficios
+	Aqui entra o que é um servidor de integração continua
+	quais ferramentas são necessarias para realizar a integração continua
+		build automatizado
+		SCM
+		servidor de integração continua
+		
+
+Configurar um JOB - falar que este JOB da para configurar uma notificação por e-mail
+	fazer alteração na aplicação e mostrar ela alterada
+
+
+
+Se der tempo mostro a configuração do jenkins
+
+Se der tempo mostrar o processo de forma manual
+
+Se der tempo mostrar a instalação dele com docker
+
+
+
+--------------------------------------------------
+
+lembretes:
+	Desistalar a aplicação do tomcat
+
+
+O Servidor de Integração Contínua é uma aplicação que tem como objetivo principal recuperar as alterações ocorridas no repositório e integrá-las, com a execução do script de build
+	
+	
+A Integração Contínua surgiu como parte das práticas da metodologia ágil XP (Extreme Programming), tendo como foco o desenvolvimento de software em ciclos menores, proporcionando melhor resposta a alterações e inclusão de novos requisitos
+
+A Integração Contínua tem como ideia principal a diminuição dos riscos através do monitoramento constante das alterações
+
+A integração contínua vem para ajudar a antecipar os problemas , ela, continuamente, verifica o servidor de versionamento, checando a estabilidade do código
