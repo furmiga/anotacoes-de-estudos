@@ -1,3 +1,6 @@
+ @Component -> usado em classes para o sprin gerenciar
+ @Bean -> usado em metodos para o spring gerenciar
+ 
  JBoss Forge, um framework criado pela JBoss para a criação da estrutura inicial do projeto.
 	-O JBoss Forge é um gerador de projetos Java, e ele gera toda a estrutura base do projeto integrada ao Maven. Além disso, configura dependências (bibliotecas e frameworks), estrutura de pastas e gera configurações iniciais que normalmente envolve arquivos XML.
 	Sem ele, em um projeto tipicamente Java EE, devemos criar vários arquivos XML manualmente, por exemplo: persistence.xml, web.xml, faces-config.xml, pom.xml, beans.xml entre outros.
@@ -444,8 +447,608 @@ Aula 5
 			return new ModelAndView("redirect:produtos");
 		}		
 		
+		Observação: Atributos do tipo Flash têm uma particularidade que é interessante observar. Eles só duram até a próxima requisição, ou seja, transportam informações de uma requisição para a outra e, então, deixam de existir.
+				
+		Note que usamos um RedirectAttributes. Isto faz muito sentido, já que após o post iremos redirecionar a página. A prática de fazer redirecionamentos após posts tem um nome bem conhecido, Always redirect after post (em português, significa Sempre redirecione após post).
+		
 		Exercicios:
 			O que é o Flash Scoped que usamos através do objeto RedirectAttributes do Spring?
 				R:O Flash Scoped é um escopo onde os objetos que adicionamos nele através do método addFlashAttribute ficam vivos de um request para outro, enquanto o navegador executa um redirect (usando o código de status 302).
 	
 	
+	
+Aula 6
+	
+	Validação com spring
+		
+		Para usar o validador do spring, precimaos baixar as dependencias da especificação do bean validation, pois o spring usa essa especificação por baixo dos panos
+		
+		<dependency>
+			<groupId>javax.validation</groupId>
+			<artifactId>validation-api</artifactId>
+			<version>1.0.0.GA</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-validator</artifactId>
+			<version>4.2.0.Final</version>
+		</dependency>
+		
+		vamos criar a classe que sera nosso validador
+		
+		public class ProdutoValidation implements Validator {
+
+			//Aqui sera passado quais as classes esse validados suporta(tipo minhas classes de negocio que serão validadas)
+			@Override
+			public boolean supports(Class<?> clazz) {
+				return Produto.class.isAssignableFrom(clazz);
+			}
+
+			//o primeiro parametro é a classe que sera validada
+			//o segundo parametro é a classe de erros que sera popupalada com informações tais como, se a validação passou ou não, depois eu usso essa classe para verificar se as validações passaram
+			@Override
+			public void validate(Object target, Errors errors) {
+				ValidationUtils.rejectIfEmpty(errors, "titulo", "field.required");
+				ValidationUtils.rejectIfEmpty(errors, "descricao", "field.required");
+
+				Produto produto = (Produto) target;
+
+				if(produto.getPaginas() <= 0) {
+					errors.rejectValue("paginas", "field.required");
+				}
+			}
+
+		}
+		
+		Agora na classe que iremos utilizar o validator vamos criar o metodo initBinder
+		Essa classe é responsavel por vincular o validador com o controller
+		
+		@InitBinder
+		public void initBinder(WebDataBinder binder) {
+			binder.addValidators(new ProdutoValidation());
+		}
+		
+		Agora no método que ira utilizar o validator faremos assim:
+		
+		//Anotação @valid informa que esse produto sera validado pelo nosso validator(que vinculamos no método acima)
+		//Passamos como parametro o BindingResult(a ordem dos parametro neste caso influencia, portando este cara teem que vir logo apos a nossa classe que sera validada)que tera informações por exemplo se o novvo validator retornou erro ou não
+		@RequestMapping(method=RequestMethod.POST)
+		public ModelAndView gravar(@Valid Produto produto, BindingResult result, 
+				RedirectAttributes redirectAttributes) {
+
+			//Aqui estamos verificando se ocorreu algum erro na validação
+			if (result.hasErrors()) {
+				return form();
+			}
+
+			produtoDao.gravar(produto);
+
+			redirectAttributes.addFlashAttribute("sucesso", "Produto cadastrado com sucesso!");
+
+			return new ModelAndView("redirect:produtos");
+		}		
+	
+		Exercicio:
+			Por quê utilizamos o Validator do Spring ao invés de fazer as validações manualmente?
+				R: Quando utilizamos o Validator do Spring, temos a possibilidade de configurar o controller para que utilize automaticamente o validador todas as vezes que for necessário validar a classe desejada, ou seja, a classe que precisa ser validada (anotada com @Valid). Vale lembrar que o uso do InitBinder é necessário para que seja possível essa validação automática.
+	
+	
+
+Aula 7
+	
+	Exibindo mensagens de erro na tela
+		Vamos primeiramente criar um arquivo de properties messages.properties na pasta WEB-INF:
+			
+			
+			field.required = Campo obrigatório
+			field.required.produto.titulo = O título é obrigatório
+			field.required.produto.paginas = Informe o número de páginas
+			field.required.produto.descricao = A descrição é obrigatória
+			typeMismatch = O tipo de dado é inválido
+			typeMismatch.produto.paginas = Digite um valor válido. Exemplo: "100"
+			
+		Obs: Assim que o arquivo for salvo, clique nele com o botão direito do mouse e selecione Properties. Em Text file encoding, verifique se o encoding é UTF-8, caso não seja, altere-o.
+		
+		Para o Spring encontrar o arquivo messages.properties, crie um novo método na classe AppWebConfiguration, que irá retornar o arquivo com algumas configurações. Crie um novo método como o exemplo abaixo:
+		
+			//lembrando que para o spring gerenciar este metodo eu preciso anotar ele como @bean
+			@Bean
+			public MessageSource messageSource() {
+				ReloadableResourceBundleMessageSource messageSource =
+					new ReloadableResourceBundleMessageSource();
+
+				messageSource.setBasename("/WEB-INF/messages");
+				messageSource.setDefaultEncoding("UTF-8");
+				messageSource.setCacheSeconds(1);
+
+				return messageSource;
+			}
+		
+		Para adicionar as mensagens no formulário form.jsp, adicione uma nova taglib:
+		
+			%@ taglib uri="http://www.springframework.org/tags/form" prefix="form" %>
+		
+		Além disso, substitua a tag <form> para:
+		
+			<form:form action="/casadocodigo/produtos" method="POST" commandName="produto">
+			
+			Obs: Caso esteja usando dependências atualizadas e der o erro Unable to find setter method for attribute: [commandName], troque o commandName para modelAttribute.
+			
+		Adicione as mensagens de erro para os campos de título, descrição e páginas:
+	
+			<form:form action="/casadocodigo/produtos" method="POST" commandName="produto">
+				<div>
+					<label>Título</label> 
+					<input type="text" name="titulo">
+					<form:errors path="titulo" />
+				</div>
+				<div>
+					<label>Descrição</label>
+					<textarea rows="10" cols="20" name="descricao"></textarea>
+					<form:errors path="descricao" />
+				</div>
+
+				<div>
+					<label>Páginas</label>
+					<input type="text" name="paginas">
+					<form:errors path="paginas" />
+				</div>
+
+				<c:forEach items="${tipos}" var="tipoPreco" varStatus="status">
+					<div>
+						<label>${tipoPreco}</label>
+						<input type="text" name="precos[${status.index}].valor">
+						<input type="hidden" name="precos[${status.index}].tipo" value="${tipoPreco}">
+					</div>
+				</c:forEach>
+				<button type="submit">Cadastrar</button>
+			</form:form>	
+			
+	Usando taglib do spring para chamar o controller direto, ao invez de passar a url do mesmo
+
+		adicionar a taglib 
+			<%@ taglib uri="http://www.springframework.org/tags" prefix="s" %>
+			
+		E use o método mvcUrl("controller#metodo").build() para criar a URL:
+			<form:form action="${s:mvcUrl('PC#gravar').build()}" method="POST" commandName="produto">
+			
+		O controller é referenciado pelas suas letras maiúsculas, então ProdutosController vira PC.
+		
+		Por fim, para que a URL possa ser construída de forma correta, separando os contextos, modifique o @RequestMapping do ProdutosController para /produtos:
+		
+			@Controller
+			@RequestMapping("/produtos")
+			public class ProdutosController {
+
+				// restante do código omitido
+
+			}
+			
+	
+	Conclusão sobre o @Valid
+	
+		quando eu coloco esta anotação por padrão o spring ja faz algumas validações, como por exemplo verificar se o conteudo ionformado na tela é do tipo do campo na hora do bind,
+		por exemplo , é para digitar um inteiro o cara deixa vazio
+		
+		quando ocorre um erro ele ja tem alguns codigos de erro, por exemplo se deu esse erro de conversão, o codigo de erro é typeMismatch, por isso no message.properties, se eu quiser colocar uma messagem de erro para esse tipo de erro eu tenho que colocar o prefixo typeMismatch e depois a classe e o campo ex:
+		typeMismatch.produto.paginas = Digite um valor válido. Exemplo: "100"
+		ou deixar uma msg generica 
+		typeMismatch = O tipo de dado é inválido
+		
+Aula 8
+		
+	Manipulando data no spring - usando a anotacao @DateTimeFormat
+		
+		
+		@DateTimeFormat(pattern="dd/MM/yyyy")
+		private Calendar dataLancamento;
+		
+		 Na jsp, crie mais uma div:
+			
+			<div>
+				<label>Data de Lançamento</label>
+				<input name="dataLancamento" type="text" />
+				<form:errors path="dataLancamento" />
+			</div>	
+			
+		desta forma o spring vai fazer o bind do que foi inputado na tela para o campo, no formato definido no pattern
+		
+	Usando configuração de data para TODOS os campos de data
+	
+		Se usarmos a forma aprendida anteriormente, teremos que colocar a anotação @DateTimeFormat para todos os campos data da aplicação,
+		para deixar esta configuração em um unico lugar, vamos criar um Conversor na nossa classe de Configuração
+		
+		AppWebConfiguration, criar o método abaixo:
+		
+		@Bean
+		public FormattingConversionService mvcConversionService() {
+			DefaultFormattingConversionService conversionService = 
+				new DefaultFormattingConversionService();
+			DateFormatterRegistrar registrar = new DateFormatterRegistrar();
+			registrar.setFormatter(new DateFormatter("dd/MM/yyyy"));
+			registrar.registerFormatters(conversionService);
+
+			return conversionService;
+		}
+		
+	Deixando o spring tomar conta dos inputs
+		
+		Se um campo estiver invalido a msg de erro ira aparecer, porem se vc colocar valor neste campo mas outros campos continuarem invalidos, a msg do campo que vc informou vai sumir, porem o conteudo inbutido nele tambem
+		para arrumar isso vamos deicar o srping tomar conta dos nossos inputs
+		
+		troque as tags do formulário no form.jsp de <input type="text" name="nome" /> para <form:input path="nome" />, por exemplo. Ele ficará com a seguinte estrutura:
+		
+		<form:form action="${s:mvcUrl("PC#grava").build() }" method="post" 
+			commandName="produto">    
+
+			<div>
+				<label>Título</label>
+				<form:input path="titulo" />
+				<form:errors path="titulo" />
+			</div>
+			<div>
+				<label>Descrição</label>
+				<form:textarea path="descricao" rows="10" cols="20"/>
+				<form:errors path="descricao" />
+			</div>name
+			<div>
+				<label>Páginas</label> 
+				<form:input path="paginas" />
+				<form:errors path="paginas" />
+			</div>
+			<div>
+				<label>Data de lançamento</label>
+				<form:input path="dataLancamento" />
+				<form:errors path="dataLancamento" />
+			</div>
+			<c:forEach items="${tipos}" var="tipoPreco" varStatus="status">
+				<div>
+					<label>${tipoPreco}</label> 
+					<form:input path="precos[${status.index}].valor" />
+					<form:hidden path="precos[${status.index}].tipo" 
+						value="${tipoPreco}" />
+				</div>
+			</c:forEach>
+			<button type="submit">Cadastrar</button>
+		</form:form>		
+		
+		mas para isso funcionar , faça o método form() do ProdutoController receber um Produto:
+		
+			@RequestMapping("form")
+			public ModelAndView form(Produto produto) {
+				ModelAndView modelAndView = new ModelAndView("produtos/form");
+				modelAndView.addObject("tipos", TipoPreco.values());
+
+				return modelAndView;
+			}	
+
+		 O método gravar, também do ProdutoController irá apresentar um erro, pois dentro dele há uma chamada para o método form. Então passe um Produto para ele:
+		 
+			@RequestMapping(method=RequestMethod.POST)
+			public ModelAndView grava(@Valid Produto produto, BindingResult result, 
+					RedirectAttributes redirectAttributes) {
+
+				if(result.hasErrors()) {
+					return form(produto);
+				}
+
+				produtoDao.gravar(produto);
+
+				redirectAttributes.addFlashAttribute("sucesso", "Produto cadastrado com sucesso!");
+
+				return new ModelAndView("redirect:produtos");
+			}	
+			
+Aula 9
+
+	Enviando arquivo para o servidor - MultiPart
+	
+		Começaremos a fazer esta mudança a partir do formúlário de cadastro de produtos. O form.jsp
+		
+		<div>
+			<label>Sumário</label>
+			<input name="sumario" type="file" /> --> o type file é um atributo do html 5 para seleção de arquivo
+		</div>
+			
+	Configure o Spring para trabalhar com arquivos. Na classe AppWebConfiguration, crie o seguinte método:
+		
+		@Bean
+		public MultipartResolver multipartResolver() {
+			return new StandardServletMultipartResolver();
+		}	
+		
+	Além disso, altere a configuração das servlets. Então, na classe ServletSpringMVC, sobrescreva o seguinte método:
+		
+		@Override
+		protected void customizeRegistration(Dynamic registration) {
+			// O MultipartConfigElement espera receber uma String que configure o arquivo. Não usaremos nenhuma configuração para o arquivo, queremos receber este do jeito que vier.
+			registration.setMultipartConfig(new MultipartConfigElement(""));
+		}	
+			
+	vamos criar uma classe responsavel por salvar o arquivo no nosso servidor
+		@Component
+		public class FileSaver {
+
+			@Autowired
+			private HttpServletRequest request;
+
+			public String write(String baseFolder, MultipartFile file) {
+
+				try {
+					String realPath = request.getServletContext().getRealPath("/" + baseFolder);
+					String path = realPath + "/" + file.getOriginalFilename();
+					file.transferTo(new File(path));
+
+					return baseFolder + "/" + file.getOriginalFilename();
+
+				} catch (Exception e) {
+					throw new RuntimeException(e);    
+				}
+
+			}
+		}
+	
+	vamos usar agora a classe criada no nosso controller
+		
+		@Autowired
+		private FileSaver fileSaver;
+		
+		//aqui passamos o primeiro parametro MultiPartFile para receber esse cara da pagina
+		@RequestMapping(method=RequestMethod.POST)
+		public ModelAndView gravar(MultipartFile sumario, @Valid Produto produto, 
+				BindingResult result, RedirectAttributes redirectAttributes) {
+
+			if(result.hasErrors()) {
+				return form(produto);
+			}
+
+			String path = fileSaver.write("arquivos-sumario", sumario);
+			produto.setSumarioPath(path);
+
+			produtoDao.gravar(produto);
+
+			redirectAttributes.addFlashAttribute("sucesso", "Produto cadastrado com sucesso!");
+
+			return new ModelAndView("redirect:produtos");
+		}
+		
+	Crie a pasta arquivos-sumario dentro de src/main/webapp/.
+	
+	Por fim, para o Spring encontrar o FileSaver, adicione-o na anotação @ComponentScan, na classe AppWebConfiguration:
+
+		@EnableWebMvc
+		@ComponentScan(basePackageClasses={HomeController.class, ProdutoDAO.class, 
+			FileSaver.class})
+		public class AppWebConfiguration {
+
+			// restante do código omitido
+
+		}
+
+Aula 10
+	Lberar acesso para a pasta resource
+		Por padrão, o Spring MVC nega o acesso à pasta resources. Consequentemente, o Tomcat não pode carregar os arquivos CSS (e a página fica sem design)
+		Para liberar o acesso, é preciso fazer duas alterações na classe AppWebConfiguration
+		A classe deve estender a classe WebMvcConfigurerAdapter:
+		
+			@EnableWebMvc
+			@ComponentScan(basePackageClasses= {HomeController.class, ProdutoDAO.class, 
+				FileSaver.class})
+			public class AppWebConfiguration extends WebMvcConfigurerAdapter {
+
+				// restante do código omitido
+
+			}	
+
+		A classe deve implementar o método configureDefaultServletHandling para liberar o acesso:
+
+			@Override
+			public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
+				configurer.enable();
+			}				
+		
+	URL amigavel
+		O Spring já traz um sistema de URLs amigáveis, que são URLs que parecem texto e não ficam poluídas com ? e &. Então edite o método detalhe, adicionando uma variável na rota e usando a anotação @PathVariable para mapear essa variável a um parâmetro:
+		
+			@RequestMapping("/detalhe/{id}")
+			public ModelAndView detalhe(@PathVariable("id") Integer id){
+
+				ModelAndView modelAndView = new ModelAndView("/produtos/detalhe");
+				Produto produto = produtoDao.find(id);
+				modelAndView.addObject("produto", produto);
+
+				return modelAndView;
+			}	
+
+Aula 11
+	
+	Expondo um bean para toda a aplicação poder usar
+	
+	na classe AppWebConfiguration  no metodo internalResourceViewResolver, colocamos o seguinte trecho
+	
+		@EnableWebMvc
+		@ComponentScan(basePackageClasses={HomeController.class, ProdutoDao.class, 
+			FileSaver.class, CarrinhoCompras.class})
+		public class AppWebConfiguration {
+
+			@Bean
+			public InternalResourceViewResolver internalResourceViewResolver() {
+
+				InternalResourceViewResolver resolver = 
+					new InternalResourceViewResolver();
+				resolver.setPrefix("/WEB-INF/views/");
+				resolver.setSuffix(".jsp");
+
+				//Aqui eu exponho esse cara para toda a minha aplicação utilizar, o spring ficar responsavel por deixar ele exposto para as JSPs utilizarem
+				resolver.setExposedContextBeanNames("carrinhoCompras");
+				
+				//esse cara expoe TODOS os beans para o spring poder utilizar nas JSPs
+				//resolver.setExposeContextBeansAsAttributes(true)
+				
+				
+				return resolver;
+			}
+
+			// restante do código omitido
+		}
+		
+
+Aula 12
+	Escopo Default dos beans do spring
+		Quando anotamos uma classe para se transformar em um bean do spring (@Controller/@Component/@Repository etc...) por padrão ela é um singleton, o escopo dela é por aplicação
+	
+	Escopo sessao
+		para tranformar o escopo de um bean, temos que usar a anotação @Scoped
+			@Component
+			@Scope(value=WebApplicationContext.SCOPE_SESSION)
+			public class CarrinhoCompras {
+				[...]
+			}
+	
+	
+	Problemas com injeção de beans com escopos menos abrangentes
+		Porem vamos usar o CarrinhoCompras em um @Controller (CarrinhoComprasController) este controller esta com o escopo default (application) e o escopo de aplicação é mais abrangente que o escopo de sessão, por tanto o spring não ira permitir injetar uma classe com escopo menos abrangente do que o bean atual
+		para solucionar o problema vamos trnaformar nosso CarrinhoComprasController com o escopo de request
+		
+		@Controller
+		@RequestMapping("/carrinho")
+		@Scope(value=WebApplicationContext.SCOPE_REQUEST)
+		public class CarrinhoComprasController {
+			[...]
+		}
+		
+	Problema do escopo de aplicação
+		Por padrão, o Spring define que o escopo de todos os componentes é de application, ou seja, apenas uma instância existe desde quando a aplicação foi criada. O principal problema dessa abordagem é esse que acabamos de encontrar, os usuários compartilham sempre os mesmos dados, uma alteração afeta todo mundo que está conectado à nossa aplicação. Para resolver isso, precisamos mudar o escopo do nosso carrinho.
+	
+	Tipos de escopo
+		 aplicação
+			desde que o servidor é iniciado, apenas um objeto na memória é manipulado(singleton), o que causa conflito quando temos mais de um usuário usando a nossa aplicação
+		 sessão
+			o objeto é criado para cada usuário que se conecta à aplicação, ou seja, usuários diferentes usam objetos diferentes, o que é ideal para um carrinho de compras, uma vez que cada usuário possui o seu próprio carrinho
+			Obs: lembrando que quando o escopo for sessão, implementar a classe com Serializable
+		 request
+			cada vez que acessamos a página, um objeto é criado
+
+Aula 13
+	s:mvcUrl passando parametros
+	
+		caso eu queira chamar um bean do spring direto e passando valores de parametros eu posso fazer da seguinte mandeira ${s:mvcUrl('CCC#remover').arg(0, valor).arg(1,valor).arg(x,valor).build() }
+		Exemplo:
+		
+		Pagina
+			<form action="${s:mvcUrl('CCC#remover').arg(0, item.produto.id).arg(1,item.tipoPreco).build() }" method="post">
+				<input type="image" src="/excluir.png" alt="Excluir" title="Excluir" />
+			</form>
+		
+		Bean
+			@RequestMapping("/remover")
+			public ModelAndView remover(Integer produtoId, TipoPreco tipoPreco){
+				carrinho.remover(produtoId, tipoPreco);
+				return new ModelAndView("redirect:/carrinho");
+			}
+	
+	Estudar mais sobre @Scope(value = WebApplicationContext.SCOPE_SESSION, proxyMode=ScopedProxyMode.TARGET_CLASS)
+	
+	Usando RestTemplate
+		Para eu realizar uma chamada a um webservice eu posso utilizar o RestTemplate
+		
+		primeiro preciso baixar as dependencias do jackson
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-core</artifactId>
+				<version>2.5.1</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-databind</artifactId>
+				<version>2.5.1</version>
+			</dependency>
+		
+		na classe que eu vou utilizar eu preciso injetar o restTemplate
+		
+			@Autowired
+			RestTemplate restTemplate;
+			
+			Obs: Para injetar o restTemplate falta criar uma configuração básica para que o Spring consiga criar o objeto RestTemplate corretamente. Para isso criaremos um novo método na classe WebAppConfiguration anotado com @Bean e que apenas retorna um objeto do tipo RestTamplate.
+					@EnableWebMvc
+					@ComponentScan(basePackageClasses={HomeController.class, ProdutoDAO.class, FileSaver.class, CarrinhoCompras.class})
+					public class AppWebConfiguration extends WebMvcConfigurerAdapter {
+						[...]
+
+						@Bean
+						public RestTemplate restTemplate(){
+							return new RestTemplate();
+						}
+
+					}				 
+		
+		O metodo de utilização ficaria assim
+			
+			@RequestMapping(value="/finalizar", method=RequestMethod.POST)
+			public Callable<ModelAndView> finalizar(RedirectAttributes model){
+				return () -> {
+					String uri = "http://book-payment.herokuapp.com/payment";
+
+					try {
+						//primeiro parametro url
+						//segundo parametro os dados que serão enviados (mais abaixo vou explicar como funciona melhor essa parte)
+						//terceiro parametro o tipo do retorno que eu espero
+						String response = restTemplate.postForObject(uri, new DadosPagamento(carrinho.getTotal()), String.class);
+						model.addFlashAttribute("sucesso", response);
+						System.out.println(response);
+						return new ModelAndView("redirect:/produtos");
+					} catch (HttpClientErrorException e) {
+						e.printStackTrace();
+						model.addFlashAttribute("falha", "Valor maior que o permitido");
+						return new ModelAndView("redirect:/produtos");
+					}
+				};
+				
+		Dados enviados
+			o nosso webService espera um json da seguinte maneira {"value": 500}
+			no trecho que fazemos a chamada para ele passamos restTemplate.postForObject(uri, new DadosPagamento(carrinho.getTotal()), String.class);, note que o que estamos passando é o DadosDePagamento, abaixo a classe:
+			
+			public class DadosPagamento {
+
+				private BigDecimal value;
+
+				public DadosPagamento(BigDecimal value) {
+					this.value = value;
+				}
+
+				public DadosPagamento() {
+				}
+
+				public getValue() {
+					return value;
+				}
+			}	
+			
+			note que o nome do atributo é o mesmo esperado pelo json, no caso value, o spring mesmo faz essa conversão, utilizando o jackson ele serializa nossa classe no formato de json e usa o nome do atributo da classe como o nome do atributo json
+			
+	
+	Requisições assincronas
+		
+		Nossa classe roda em apenas uma unica thread, então para dizer a ela para rodar um metodo em uma thread separada(assincrona), podemos usar o callable que foi implementado apartir da versão de servlets 3.0
+		O metodo ficara assim:
+		
+		
+		@RequestMapping(value="/finalizar", method=RequestMethod.POST)
+		public Callable<ModelAndView> finalizar(RedirectAttributes model){
+			return () -> {
+				try {
+					String uri = "http://book-payment.herokuapp.com/payment";
+					String response = restTemplate.postForObject(uri, new DadosPagamento(carrinho.getTotal()), String.class);
+					model.addFlashAttribute("message", response);
+					System.out.println(response);
+					return new ModelAndView("redirect:/produtos");
+				} catch (HttpClientErrorException e) {
+					e.printStackTrace();
+					model.addFlashAttribute("message", "Valor maior que o permitido");
+					return new ModelAndView("redirect:/produtos");
+				}
+			};
+		}
+		
+		Observação: Observe que estamos usando novamente recursos do Java 8. Esta forma de usar lambda nos permite criar um objeto do mesmo tipo esperado pelo retorno do método, evitando que criemos uma classe anônima. Neste caso é perfeitamente aplicável o recurso, por que na interface Callable só há um método, de nome call.
+		
