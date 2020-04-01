@@ -1,0 +1,126 @@
+comandos para linux p auxiliar
+	ps aux --> ver processos ativos
+	hostname -i --> ip da maquina
+	netstat -tlpn | grep 80 --> verifica se tem algum processo naquela porta, caso tenha mostra quem é
+	Para descompactar tar.gz:
+		tar -vzxf nomedoarquivo.tar.gz
+
+comandos docker
+	-docker version
+		.mostra versão do docker
+	
+	-docker run hello-world
+		.criar um container com a imagem hello-world (essa imagem tem que estar previamente criada , se vc não tiver essa imagem ele busca la do docker hub(repositorio com imagens pré prontas do docker))
+	
+	docker ps - exibe todos os containers em execução no momento.
+    	
+	docker ps -a - exibe todos os containers, independente de estarem em execução ou não.
+    
+	docker run -it NOME_DA_IMAGEM - conecta o terminal que estamos utilizando com o do container.
+    
+	docker start ID_CONTAINER - inicia o container com id em questão.
+    
+	docker stop ID_CONTAINER - interrompe o container com id em questão.
+    	
+	docker start -a -i ID_CONTAINER - inicia o container com id em questão e integra os terminais, além de permitir interação entre ambos.
+    
+	docker rm ID_CONTAINER - remove o container com id em questão.
+    
+	docker container prune - remove todos os containers que estão parados.
+   
+	docker rmi NOME_DA_IMAGEM - remove a imagem passada como parâmetro.
+	
+	docker run -d -P(esse -P gera uma porta aleatoria) --name NOME dockersamples/static-site - ao executar, dá um nome ao container.
+    
+	docker run -d -p(esse -p minusculo eu defino a porta da maquina fisica para a porta do container) 12345:80 dockersamples/static-site - define uma porta específica para ser atribuída à porta 80 do container, neste caso 12345.
+
+	docker run -d imagem - ele roda o container mas não trava o terminal(caso o processo do container fique rodando sempre)
+
+	docker images - mostra todas as imagens que eu possuo
+
+	docker stop -t 0 id_do_container -- para o container na hora (-t é o tempo de time out)
+
+	docker port id_do_container - ver as portar que os container estão usando
+
+	docker run -d -P -e AUTHOR="TESTE" nome-da-imagem
+		.-e seta uma variavel de ambiente no container
+
+	docker ps -q
+		.retorna apenas os id's dos containers
+
+	docker attach container_id
+		.entrar no container
+
+	docker exec -ti id_container /bin/bash
+		.executa o terminal do container 
+------------------------------------------------------------
+VOLUMES
+    	docker run -v "CAMINHO_VOLUME" NOME_DA_IMAGEM - cria um volume no respectivo caminho do container.
+    	
+	docker inspect ID_CONTAINER - retorna diversas informações sobre o container.
+
+	Exercicios:
+		Por que usamos volumes?
+			R:é muito comum usar o container e apagá-lo após seu uso. Dessa forma também são removidos os dados desse container e aí entram os volumes que permitem salvar dados fora do container.
+
+		Um volume fica salvo:
+			R: o volume fica no Docker Host. Ou seja, fica salvo no computador onde a Docker Engine está rodando.
+
+		Qual dos comandos abaixo configura o volume do diretório /var/www do container para C:\logs do Host? 
+			R: docker run -v "C:\logs:/var/www" ubuntu (usando a flag -v seguindo pelo CAMINHO_HOST:CAMINHO_CONTAINER.)
+
+		Flavio é um programador com muita experiência no mundo Javascript, porém agora resolveu se aventurar no mundo do Docker. Ao pensar em como iria organizar os caminhos dos volumes em sua máquina e container, ele executou o comando docker inspect. Abaixo temos um pedaço saída do comando docker inspect ID_DO_CONTAINER no terminal de Flavio, sobre a saída abaixo é verdade que:
+		"Mounts": [
+		    {
+			"Type": "volume",
+			"Name": "5e1cbfd48d07284680552e56087c9d5196659600ccd6874bfa3831b51ddd0576",
+			"Source": "/home/Flavio/Desktop/volumes/caminho/_data",
+			"Destination": "/var/opt",
+			"Driver": "local",
+			"Mode": "",
+			"RW": true,
+			"Propagation": ""
+		    }
+		]
+	
+			R:"/var/opt" pertence ao container enquanto "/home/Flavio/Desktop/volumes/caminho/_data" pertence à máquina e irá armazenar "/var/opt".
+--------------------------------------------------------------
+Construindo as proprias imagens
+
+    docker build -f Dockerfile - cria uma imagem a partir de um Dockerfile.
+
+    docker build -f Dockerfile -t NOME_USUARIO/NOME_IMAGEM - constrói e nomeia uma imagem não-oficial.
+
+    docker build -f Dockerfile -t NOME_USUARIO/NOME_IMAGEM CAMINHO_DOCKERFILE - constrói e nomeia uma imagem não-oficial informando o caminho para o Dockerfile.
+
+    docker login - inicia o processo de login no Docker Hub.
+
+    docker push NOME_USUARIO/NOME_IMAGEM - envia a imagem criada para o Docker Hub.
+
+    docker pull NOME_USUARIO/NOME_IMAGEM - baixa a imagem desejada do Docker Hub.
+
+    Exercicios:
+	    Guilherme Nicolau recebeu as seguintes instruções para criação de um docker container:
+
+	    Deve instalar o mysql da última imagem disponível
+	    Os dados iniciais devem ser copiados para a pasta /etc/sinc
+	    O diretório de trabalho deve ser /etc/sinc/plen
+	    A porta de comunicação deve ser 1711
+	    O comando de entrada chmod 755 /etc/sinc
+
+	    Marque a opção que possui a configuração de um Dockerfile condizente com a especificação passada para Guilherme:
+
+		R:	FROM mysql:latest
+			MAINTAINER Guilherme Nicolau
+			COPY . /etc/sinc
+			WORKDIR /etc/sinc/plen
+			ENTRYPOINT chmod 755 /etc/sinc
+			EXPOSE 1711
+
+
+
+
+	
+    
+
+	

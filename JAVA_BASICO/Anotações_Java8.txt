@@ -75,7 +75,7 @@ Quando os paramtros passados para o metodo são os mesmos do lambda podemos usar 
 
 --------------------------------------------------------------------------------------------
 
-Stream do java são é para vc manipular o fluxo do seu obj. vou colocar alguns exemplos abaixo
+Stream do java são para vc manipular o fluxo do seu obj. vou colocar alguns exemplos abaixo
 
 	//Estou filtrando todos os cursos com alunos > 50 e estou percorrendo estes cursos que foram retornados
 	cursos.stream().filter(c -> c.getAlunos() > 50).forEach(c -> System.out.println(c.getNome()));

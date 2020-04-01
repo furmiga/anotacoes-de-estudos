@@ -1,0 +1,521 @@
+NO FINAL DO CURSO VOU ALTERAR A VERSÃO DO SPRING NO POM PARA A VERSÃO 2.1.5.RELEASE
+    EX:  	
+    <parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.1.5.RELEASE</version>
+		<relativePath /> <!-- lookup parent from repository -->
+	</parent>
+
+
+Arquitetura SOFEA (arquitetura de front-end orientada a serviço)
+    Remover toda logica de apresentação do servidor e levar para o cliente
+    
+    É feito o download do front-end no cliente uma unica vez, apartir dai a unica coisa que é trafegada são documentos Json
+    
+    Isso evita que fiquem trafegando arquivos JS|css|HTML durante a experiencia do usuario, o arquivo Json é bem mais leve
+    
+    Sua aplicação feita em REST sera statelles e isso facilita na escalabilidade da aplicação
+
+MVC morre com a arquitetura SOFEA??? -- pesquisar
+
+Arquitetura REST
+    Uma forma simples de integrar sistemas
+    
+    REST é uma arquitetura e não um framework
+
+    REST vs RESTFUL
+        REST é a arquitetura
+        RESTFUL é a implementação desta arquitetura
+        Por exemplo quando eu digo que desenvolvi um serviço restful isso significa que são serviços que possuem comportamento REST.
+
+Nivel de maturidade(REST) Richardson - NIVEL 0 --> AINDA NÃO É REST
+    - utiliza HTTP apenas para transporte (não se preocupa com os verbos, com codigos de resposta etc... )
+    - imagem nivel_0.png demonstra um exemplo onde ocorre um erro e ainda assim o retorno é um 200 OK, porem co corpo do response retonar uma msg de erro
+    - não se preocupa com o recurso, geralmente a URI é sempre a mesma, e só se sabe qual serviço sera chamado atravez do corpo da msg
+
+Nivel de maturidade(REST) Richardson - NIVEL 1 --> AINDA NÃO É REST
+    - AO inves de usar uma unica URI, neste ponto ja começamos a pensar em recurso (atraves da URI identificar qual ação sera feita)
+    - Ex:
+        No nivel 0
+            POST /servicoAgendamento HTTP/1.1
+            <buscarHorarioDisponivel data="2017-02-02" medico="pereira" /> 
+        No nivel 1
+            POST /medicos/pereira HTTP/1.1
+            <buscarHorarioDisponivel data="2017-02-02" />         
+
+    -Ainda não é rest pq não estamos usando os metodos e codigos http da maneira correta
+
+Nivel de maturidade(REST) Richardson - NIVEL 2 --> JA PODE SER CONSIDERADO REST
+    - Começo a utilizar os metodos e os codigos http de maneira correto
+
+    - Nos exemplos anteriores eu utilizava um método POST para fazer consulta, agora ja começo a utilizar o metodo GET, pois é o metodo que mais se adequa a essa tarefa
+
+    Ex: 
+         No nivel 0
+            POST /servicoAgendamento HTTP/1.1
+            <buscarHorarioDisponivel data="2017-02-02" medico="pereira" /> 
+        No nivel 1
+            POST /medicos/pereira HTTP/1.1
+            <buscarHorarioDisponivel data="2017-02-02" />       
+
+        No nivel 2
+            GET /medicos/pereira/horarios?data=2017-02-02&status=disponivel HTTP/1.1  --> podemo perceber que até a URI formada agora fica auto explicativa do que eu quero do servidor
+
+        Na nivel_2.png tem o resto dos exemplos utilizando os metodos e codigos de erro HTTP
+
+Nivel de maturidade(REST) Richardson - NIVEL 3 --> REST COMPLETO
+    -   No nivel tres a requição em si não muda nada, o que muda é o retorno, nele tera instruções para o cliente do que fazer a seguir
+
+    Ex: 
+        Requisição 
+            GET /medicos/pereira/horarios?data=2017-02-02&status=disponivel HTTP/1.1
+        resposta
+            HTTP/1.1 200 OK
+
+            <horarios>
+                <horario id="1234" medico="pereira" inicio = "14:00" fim = "14:50">
+                    <link uri="horarios/1234" rel = "agendar">
+                </horario>
+            </horarios>
+        Neste caso eu busquei horario para agendamento, e na resposta eu ja retornei a URI para realizar o agendamento, meu cliente nem conhecia esse endpoint, agora ele ja conhece e pode usufruir do mesmo
+
+    HATEOAS (Hypermedia as the Engine of Application State)
+        - é uma constraint arquitetural de aplicações REST. Uma API HATEOAS provê informações que permite navegar entre seus endpoints de forma dinâmica visto que inclui links junto às respostas. Esta capacidade a difere de sistemas baseados em SOA e interfaces dirigidas por WSDL(pronuncia-se uísdou). Com SOA, servidores e clientes usualmente devem acessar uma especificação fixa que pode ser acessada em outro lugar na API, ou em um website, ou as vezes distribuído por email.
+        - HAL - padrão para escrever o HATEOAS
+        **** estudar sobre spring HATEOAS
+
+Autenticação e Autorização de APIs REST
+    - HTTPS - cria um canal seguro de comunicação através do protocolo SSL que é uma camada adicional de segurança, assim evitamos ataques por exemplo "man in the middle", que intercepta sua requisição
+    - Autenticação e Autorização (lembrando que esses é necessario que esses modelos de autenticação são feitos via HTTPS)
+        -Basic  --> usuario e senha nos headers do HTTP (base 64)
+        -Digest
+        -Certificados
+        -Tokens
+    ******  Obs: estudar mais esses modelos de autenticação
+    -OAuth
+        - Foi criado para autorização
+        - comumente utilizado para permitir que os usuários da Internet possam fazer logon em sites de terceiros usando suas contas do Google, Facebook, Microsoft, Twitter, etc.
+        - Ele especifica um processo para proprietários de recursos para autorizar o acesso de terceiros aos seus recursos de servidor sem compartilhar suas credenciais. Projetado especificamente para trabalhar com o Protocolo de Transferência de Hipertexto (HTTP), o OAuth permite essencialmente tokens de acesso a ser emitidos para clientes de terceiros, mediante autorização do servidor, com a aprovação do proprietário do recurso. O terceiro, em seguida, usa o token de acesso para recursos protegidos hospedados pelo servidor
+
+INDEPOTENCIA
+
+    - Um metodo é considerado indepotente se o resultado por ele produzido é o mesmo, independente do numero de vezes que é executado
+    - Idepotencia vem da matematica, tipo 5 x 0 é indepotente, pq não importa quantas vezes eu multiplico por zero o resultado sera sempre o mesmo
+    - Metodos indepotentes
+        - DELETE -  OPERAÇÃO NÃO SEGURO POIS ALTERA O ESTADO DO SERVIDOR, POREM SE EU CHAMO MAIS DE UMA VEZ O RESULTADO SEMPRE SERA O MESMO, PQ NÃO IREI DELETAR O MESMO CLIENTE MAIS DE UMA VEZ, o resultado pode mudar, mas o estado do servidor não sera alterado
+        - GET
+        - PUT - OPERAÇÃO NÃO SEGURA TAMBEM
+
+    - Metodos NÃO indepotente
+        - POST
+
+    Obs: os exeplos anteriores são os mais usados, existem outros metodos HTTP tbm
+
+
+PROJETO:
+    pom.xml -> arquivo responsavel pelo build da aplicação através do maven
+    mvnw(linux) e mvnw.cmd(windows) - >  é o maven embeded ou maven wrapper, para que eu não precise instalar o maven, basta ir na pasta do projeto e executar um desses arquivos passando os parametros desejados do maven
+    
+Caracteristicas spring
+    O spring tem a anotação @EnableAutoConfiguration(quando coloco a anotação @SpringBootApplication ela ja herda essa anotação) essa anotação é responsavel por tentar de maneira inteligente
+    subir e configurar todas as dependencias que sua aplicação tem de maneira automatizada
+    Ex: se eu coloco a dependencia do mysql e coloco as configurações de conexão com o banco o spring automaticamente
+        ja vai configurar e se conectar no banco, sem eu precisar me preocupar com isso
+
+    Caso eu anote um metodo com @GetMapping ou @PostMapping o metodo sera chamado automaticamente quando feito um get ou PostMapping
+    Caso eu anote dois metodos com @GetMapping ou @PostMapping apenas, o spring ira retornar um erro pois ele não sabe qual dos dois metodos é p chamar
+        Nestes casos eu preciso passa realmente um caminho para um dos meus serviços ou para os dois para evitar que ocorra esse conflito
+            Ex: @GetMapping("/recurso")
+
+
+Criação dos schemas com flywaydb ao inves de usar geração de tabelas com HIBERNATE
+    Problema hibernate
+        evitar deixar o hibernate gerar os schemas do banco, a propria documentação diz que essa geração é bom para fins de teste ou prototipação
+        Documentação:
+            Embora a geração automática de esquema seja muito útil para fins de teste e prototipagem, em um ambiente de produção, é muito mais flexível gerenciar o esquema usando scripts de migração incremental.
+        Ex de problema:
+            Caso eu tenha criado um atributo em uma entidade o hibernate vai criar com este atributo   
+            porem se eu remover este atributo a coluna ainda continuara na tabela, o hibernate não ira apagar
+            por isso no site diz que ele não é tão flexivel 
+
+            Outro problema é que o usuario da aplicação geralmente naao vai ter acesso para criação das tabelas, isso fica a cargo do DBA.. mais um motivo para não deixar
+            o hibernate criar as tabelas
+
+    flyway
+        Tem integração com spring
+        ele funciona basicamente procurando scripts de migração (scripts sql de criação de tabelas etc...)
+        O arquivo de migração ficar na pasta resource/db/migration do projeto -- flyway.png
+            o nome do arquivo sql tem que começar obrigatoriamente com V(VERSÃO)__(DOIS UNDERLINES)_(RESTO DO NOME DO ARQUIVO) --> v01__criar_e_registrar.sql
+        A integração com o spring facilita o uso, pois apartir do momento que eu tenho esses arquivo de migração, no momento de subir a aplicação o spring executa esses scripts na ordem que estão la(ele verica pelas versões que eu coloco no começo do arquivo)
+        Interessante que ele cria uma tabela chamada schema_version onde ele coloca o nome do script e das versões que foram rodadas -- schema_flyway.png
+
+        Após um script executado vc não pode mais alterar ele, pois se não a aplicação ira dar um erro pois ele valida o checksum do banco com o do arquivo
+
+
+Application.properties
+    spring.jackson.deserialization.fail-on-unknown-properties=true
+        informando esta propriedade o spring ira retornar um erro caso ele tente deserializar um objeto que venha com propriedades que não tenham no meu objeto
+            Ex: class cliente {
+                    private String nome;
+                    private int idade;
+                }
+                
+                JSON
+                {
+                "nome": "Lazer",
+                "idade": "Lazer",
+                "teste" : teste
+                }
+                
+                Neste caso o spring retonara um erro 400 bad request
+
+
+Bean validation
+    Quando eu importo o spring 		
+        <dependency>
+			<groupId>org.springframework.boot</groupId>
+			<!-- Ja contem todas as dependencias responsaveis para se conectar ao Banco de dados -->
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+    Ele ja vem com as dependencias para utilizar o bean validation(Especificação), a implementação do bean validation que o spring utiliza é o Hibernate Validator
+
+    Como utilizar na classe que representa nosso modelo, vc coloca a anotação @NotNull no atributo que eu desejo 
+        @NotNull
+        private String nome;
+
+        e no meu controller/resource eu coloco a anotação @Valid no parametro que sera validado
+        
+        @PostMapping
+		public ResponseEntity<Categoria> criar(@Valid @RequestBody Categoria categoria , HttpServletResponse response) {...}
+
+    Porem desta maneira ele só retorna um 400 bad request, mas nao retorna nenhuma msg de erro
+    
+    para tratar os erros retornados do bean validation tenho que implementar um método la na classe de exception handler
+
+        //Utilizado para tratar msg de erro do BEAN VALIDATION
+        @Override
+        protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+                HttpHeaders headers, HttpStatus status, WebRequest request) {
+            // TODO Auto-generated method stub
+            //ex.getBindingResult() retorna o conteudo com os campos que deram erro
+            List<Erro> erros = criarListaDeErro(ex.getBindingResult());
+            return handleExceptionInternal(ex, erros,headers, status, request);
+        }
+        //metodo para listar todos os erros do bean validation
+        private List<Erro> criarListaDeErro(BindingResult bindingResult){
+            List<Erro> erros = new ArrayList<>();
+
+            for(FieldError field : bindingResult.getFieldErrors()) {
+                String mensagemUsuario = messageSource.getMessage(field, LocaleContextHolder.getLocale());
+                String mensagemDesenvolvedor = field.toString();
+                erros.add(new Erro(mensagemUsuario, mensagemDesenvolvedor));
+            }
+            return erros;
+        }
+
+        preciso criar o arquivo ValidationMessages.properties na pasta resource
+        
+        javax.validation.constraints.NotNull.message= campo {0} obrigatorio  
+        javax.validation.constraints.Size.message={0} deve ter o tamanho entre {min} e {max}
+
+        --> {0} isso por padrão ele substitui essa variavel pelo nome do atributo
+        --> {min} e {max} são os parametro que eu passei na anotação @Size
+        
+        @NotNull
+        @Size(min = 3, max = 20)
+        private String nome;
+
+        a msg ira pegar extamente como esta o nome do atributo, caso queira mudar isso tipo aparecer o nome com o n maiusculo eu preciso ir no messages.properties
+        e adicionar a seguinte linha --> categoria.nome=Nome 
+
+Eventos no spring:
+    Os eventos do spring precisam de dois itens, uma classe que representa o evento em si e uma classe que sera o listener deste evento.
+    O evento:
+        Crio uma classe no qual representara meu evento
+        public class RecursoCriadoEvent extends ApplicationEvent {
+           public RecursoCriadoEvent(Object source, ...) {
+                //Aqui eu informo qual a classe que gerou este evento
+                *******Mas preciso estudar um pouco mais para entender o que o spring faz com a informação do source
+                super(source);
+            }
+            ...
+        }
+    O listener:
+        Crio a classe que ira manipular o meu evento.. quando eu publicar meu evento(veremos isso mais abaixo) este método onApplicationEvent sera acionado
+        @Component
+        public class RecursoCriadoListener implements ApplicationListener<RecursoCriadoEvent> {
+
+            @Override
+            public void onApplicationEvent(RecursoCriadoEvent recursoCriadoEvent) {
+               ...
+            }
+        }
+    
+    Publicando o evento:
+        Meu publicador de eventos
+	    
+        @Autowired
+	    private ApplicationEventPublisher publisher;
+
+        public ResponseEntity<Categoria> criar(@Valid @RequestBody Categoria categoria , HttpServletResponse response) {
+            ...
+            
+            //Aqui eu publico meu evento e no momento da publicação o meu listener sera acionado
+            publisher.publishEvent(new RecursoCriadoEvent(this, response, categoriaSalva.getCodigo()));
+            
+            ...
+        }
+
+    ****** Estudar um pouco mais para entender esses eventos e o pq eu preciso passar um source 
+
+Atualizando uma pessoa com PUT
+    Todos os comentarios referentes a este assunto estão no codigo (classe PessoaResource)
+
+Classe auxiliar para tratamento de exceptions
+    	<!-- dependencia auxliar a manipular as minhas exceptions -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.4</version>
+		</dependency>
+
+        //neste caso eu pego a mensagem da causa principal da exceção
+        ExceptionUtils.getRootCauseMessage(ex);
+
+
+Método com comportamento customizavel Spring DATA:
+    Caso eu queira adicionar um novo método customizavel eu preciso realizar os seguintes passos:
+
+    Interface Repository (Logo abaixo veremos a classe LancamentoRepositoryQuery):
+        public interface LancamentoRepository extends JpaRepository<Lancamento, Long>, LancamentoRepositoryQuery {}
+
+    Interface que ira conter o novo método (lembrando que obrigatoriamente o nome tem que ser o da classe que deseja estender o comportamento mais o sufixo Query no caso LancamentoRepositoryQuery)
+        public interface LancamentoRepositoryQuery {
+
+	        public List<Lancamento> filtrar(LancamentoFilter lancamentoFilter);
+	    }
+
+    Implementação da interface:
+        public class LancamentoRepositoryImpl implements LancamentoRepositoryQuery {
+
+            @PersistenceContext
+            private EntityManager manager;
+            
+            @Override
+            public List<Lancamento> filtrar(LancamentoFilter lancamentoFilter) {
+                
+                ...
+
+                TypedQuery<Lancamento> query = manager.createQuery(criteria);
+                return query.getResultList();
+            }
+        }
+
+*****Estudar mais sobre jpamodelgen
+
+******Paginação com spring muitoooo de boooas, dar uma olhada na classe LancamentoResource no metodo pesquisar, la tem um exemplo de paginação
+
+
+Autenticação Basic
+    Para implementar uma autenticação basic com spring security temos que seguir os passos abaixo:
+
+    pom.xml:
+        <dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+    
+    Criar uma classe para configurar usuario e senha e regras de autenticação para as URIs
+        //Não precisaria colocar essa anotação pois a @EnableWebSecurity ja possui a mesma, porem vamos deixar apenas para fins semanticos
+        @Configuration
+        //Habilita a seguranças
+        @EnableWebSecurity
+        public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+            @Override
+            protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+                //Aqui eu configuro no spring security quais usuarios e permissões poderam ter acesso as minhas URIs que estão bloqueadas
+                //Essa configuração é esquivalente a configuração de xml que era feita antes no spring-security-config.xml:
+                /*
+                <?xml version="1.0" encoding="UTF-8"?>
+                    <beans:beans xmlns="http://www.springframework.org/schema/security"
+                                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                                xmlns:beans="http://www.springframework.org/schema/beans"
+                                xsi:schemaLocation="http://www.springframework.org/schema/security
+                                                    http://www.springframework.org/schema/security/spring-security.xsd
+                                                    http://www.springframework.org/schema/beans
+                                                    http://www.springframework.org/schema/beans/spring-beans.xsd">
+                    
+                        <http create-session="stateless">
+                            <csrf disabled="true"/>
+                            <intercept-url pattern="/**" access="isAuthenticated()"/>
+                            <http-basic />
+                        </http>
+                    
+                        <authentication-manager>
+                            <authentication-provider>
+                                <user-service>
+                                    <user name="admin"
+                                        password="admin"
+                                        authorities="ROLE" />
+                                </user-service>
+                            </authentication-provider>
+                        </authentication-manager>
+                    
+                    </beans:beans>
+                */
+                auth.inMemoryAuthentication()
+                    .withUser("admin").password("admin").roles("ROLE");
+            }
+            
+            @Override
+            protected void configure(HttpSecurity http) throws Exception {
+                http.authorizeRequests()
+                        //Para /categorias qualquer um pode acessar
+                        .antMatchers("/categorias").permitAll()
+                        //Para o resto vc deve estar autenticado
+                        .anyRequest().authenticated()
+                        .and()
+                    //E o tipo de autenticaçao que sera feita é a basic
+                    .httpBasic().and()
+                    //Aqui eu desabilito a criação de sessão no servidor, para que a aplicação tenha um comportamento stateless (****ESTUDAR MAIS SOBRE ESSA OPÇÃO E VER SEUS BENEFICIOS)
+                    .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+                    // e vamos desabilitar o cross-site request forgery 
+                    .csrf().disable();
+            }
+            
+        }
+
+    //Explicações na propria classe
+
+
+OUth2
+    OAUTH é um padrão de internet para autorização de terceiros em uma aplicação sem a necessidade de compartilhar usuario e senha --> https://tools.ietf.org/html/rfc6749
+    COmo implementação deste padrão vamos usar o spring-security-oauth2
+    O oauth tem varios fluxos de autorização, nos exemplos iremos utilizar o Fluxo de Credenciais de Senha ou password credentials flow
+    Link para uma introdução mais detalhada do oauth:
+        https://www.digitalocean.com/community/tutorials/uma-introducao-ao-oauth-2-pt
+        Obs: o fluxo que iremos utilizar esta descrito ai tbm (Fluxo de Credenciais de Senha)
+        Outh_1.png e Outh_2.png tem um desenho basico do fluxo de autorização que iremos utilizar
+    
+    Quando eu configuro o oauth eu ja adquiro por padrão alguns endpoints:
+        /oauth/authorize --> essa é a URL que eu solicito meu access token passando um Basic auth, eu preciso passar o usuario e senha do cliente: angular/@ngul@r (o configurado no AuthorizantionServer), e depois o usuario e senha do usuario mesmo: admin/admin (o configurado no ResourceServerConfig)
+            --> configuração no postman > acces_token_oauth_1.png|acces_token_oauth_2.png|acces_token_oauth_3.png
+            {
+                "access_token": "0c29ecc4-292f-4116-9d98-faef664216e2",
+                "token_type": "bearer",
+                "expires_in": 1799,
+                "scope": "read write"
+            }
+
+          com o acces token em mãos eu consigo acessas as URLS que antes precisavam de Autenticação
+          no postman eu coloco um header Authorizantion e o valor eu coloco Bearer [access token] 
+            >  acces_token_oauth_utilizacao_1.png
+        
+        /oauth/token
+        /oauth/check_token
+        /oauth/confirm_access
+        /oauth/error
+
+JWT (json web token) : 
+    JWT é um padrão de internet https://tools.ietf.org/html/rfc7519 
+    json mais completa com mais informações, o outro token que usavamos era apenas um identificador
+    este json ainda é um acess token, mas ele vai ter informações a mais alem da identificação
+
+    O token é encodado e quando decodificamos ele temos mais informações do cliente ao inves de ser apenas um identificador
+        O token é dividio em tres partes (jwt1.png):
+            -> header 
+            -> payload (aqui eu posso passar um json, e recuperar do outro lado e tratar em um objeto por exemplo)
+            -> assinatura (validação do token)
+    
+        com um JWT eu consigo deixar até minha aplicação mais escalavel, pois posso passar entre elas entidades no payload do token, então posso de maneira mais facilitada ter comportamentos stateless na aplicação
+        pois não tem necessidade de aguar informações na seção 
+
+    Como JWT é uma especificação/padrão, vamos utilizar a implementação do spring security jwt1
+        <dependency>
+    		<groupId>org.springframework.security</groupId>
+    		<artifactId>spring-security-jwt</artifactId>
+		</dependency>
+
+    JWT garante a integridade do token, pois a assinatura dele é baseada no header e no payload, caso esse token seja alterado no caminho, a chave de assinatura não vai bater.
+
+Renovar meu access token
+    RefreshToken
+        
+        O refresh_token pode vir no proprio corpo do response ou em um cookie privado
+
+        (configuração do refresh token esta no projeto na classe : com.example.algamoney.api.config.AuthorizationServerConfig)
+        Quando o access token expira, ao inves de eu solicitar um novo acces token atraves do password_flow eu uso o refresh_token_flow
+            Beneficios:
+                - no fluxo de refresh token eu não passo de novo o usuario e senha por exemplo (ainda tenho que passar o basic autentication com informações do cliente)
+                refresh_token_1.png|refresh_token_2.png|refresh_token_3.png
+
+        Setar refresh token em um cookie http e em produção esse cookie estando em um https o javascript não tem acesso ao refresh token
+            
+
+***Access token tem que ter um tempo baixo para expirar
+***O refresh token pode ter um tempo maior pois ele ira ficar em um cookie (em produção em um cookie https) onde o JS não tera acesso 
+
+CORS (basicamente adicionar uns header no response permitindo requisição de origem diferente)
+    Os browsers implementam como método de segunrança que só permite o javascript fazer requisiçao de mesma obrigatoriamente
+    Ex: server A http://localhost:8000 (requisição javascript) ---> Server B http://localhost:8080
+
+        Neste caso a origem é http://localhost:8000 logo no momento que o JS for fazer a requisiçõ o browser ira barrar pois o destino da requisição não é igual a origem 
+
+    COMO RESOLVER ?
+        Necessario habilitar o CORS (basicamente ele habilita a possibilidade de requisição de origem diferente)
+        eu habilito o CORS no spring, pois essa permissão vira no header do response informando ao brownser que o mesmo pode fazer requisição de origem diferente
+
+    preflight request --> ESTUDAR MAIS SOBRE
+        .Requisição prévia que o browser faz para o servidor, verificando se ele pode fazer a request, caso o CORS não esteja configurado a requisição real nem sera feita 
+        .Cao seja permitido ai o browser continua as requsts
+            A requisição prévia tem que retornar no response as permissões do CORS para que possa continuar com as proximas authorizeRequests
+            CORS.png
+
+    Para saber mais do CORS com spring https://spring.io/guides/gs/rest-service-cors/
+        -> Porém até o momento 20/11/19 o suporte do CORS do spring não esta bem integrado com o spring security OAUTH 2.0
+            .Quando faço uma requisição p por exemplo pegar um acces token o browser vai fazer o preflight request, este request eu não tenho controle, porem eu preciso passar usuario, cliente, senha etc, na requisição para pegar o acces token_type  
+            mas como o browser faz essa requisição primeiro o OAUTH barra, então não da para dar as permissões do CORS para dar continuidade
+
+    VAMOS RESOLVER ESSE PROBLEMA COM FILTROS:
+        -- Implementação do filtro na aplicação de exemplo
+
+
+HEROKU:
+    Plataforma em nuvem
+
+    Fazer deploy da aplicação no HEROKU
+        - tem que ter o git instalado
+        - ir para a pasta onde esta o projeto
+        - Criando aplicação no heroku --> heroku_criar_app.png
+        - Criar banco de dados mysql --> heroku_mysql.png
+            .addons são features do heroku tipo mysql, redis, kafka etc.. --> heroku_addons.png
+            .para criar o mysql iremos fazer isso atraves do  jawsdb.. para saber mais --> https://www.jawsdb.com/
+            .Podemos ver que quando criamos o banco o heroku retorna uma variavel JAWSDB_URL para ver o conteudo basta fazer assim --> heroku_mysql_detalhe_variavel.png
+        -agora vamos colocar as informações de conexão com o banco em prod recebendo esses valores por variaveis 
+            Ex: 
+                spring.datasource.url={JDBC_DATABASE_URL}
+                spring.datasource.username={JDBC_DATABASE_USERNAME}
+                spring.datasource.password={JDBC_DATABASE_PASSWORD}
+
+        - agora temos que criar essas variaveis no heroku --> heroku_criando_variaveis.png --> olhar com atenção essa porra vitão, vc se conhece 
+        - Para ver as variaveis que criamos --> heroku_visualizar_configuracoes.png
+        - Para subirmos mesmo nosso fonte no heroku temos:
+            - criar um arquivo na raiz do projeto chamado Procfile (tem que ser exatamente esse nome) --> heroku_procfile.png
+                .Esse arquivo estara contido o comando que sera executado quando startar o Application
+                    Definição do Procfile no heroku: 
+                        Heroku apps include a Procfile that specifies the commands that are executed by the app on startup. You can use a Procfile to declare a variety of process types, including:
+
+                        Your app’s web server
+                        Multiple types of worker processes
+                        A singleton process, such as a clock
+                        Tasks to run before a new release is deployed
+                . Conteudo do arquivo: --> heroku_conteudo_Procfile.png
+            - Agora temos que fazer um commit (local mesmo) antes de mandar para o heroku --> heroku_git.png
+            - e depois fazer um push para o heroku --> heroku_build.png
+                . essa parte pode demorar um pouco pois tem que provisionar maquina e tals
+            - para ver os logs basta dar o comando --> heroku logs --tail
+
+
+

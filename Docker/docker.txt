@@ -2,3 +2,7 @@ Hypervisor -> permite virtualizar seus recurasos fisicos
 
 o que é o docker:
 	
+
+sudo docker build -t app/bancodigital .
+
+sudo docker-compose -f docker-compose.yml up
